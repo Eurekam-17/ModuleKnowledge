@@ -9,4 +9,15 @@
         <field name="key">eurekam_knowledge_portal.root_article_id</field>
         <field name="value">19</field>
     </record>
+
+    <!--
+        Rubrique anglaise « [EN] - Knowledge database » (463 en prod), sous la racine :
+        - client dont le compte est en français : base partagée SANS cette rubrique ;
+        - client dans une autre langue : UNIQUEMENT cette rubrique, interface en anglais.
+        0 ou vide : pas de tri par langue, tout le monde voit toute la base.
+    -->
+    <record id="kb_en_root_param" model="ir.config_parameter">
+        <field name="key">eurekam_knowledge_portal.en_root_article_id</field>
+        <field name="value">463</field>
+    </record>
 </odoo>

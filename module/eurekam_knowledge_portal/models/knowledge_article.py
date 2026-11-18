@@ -7,6 +7,7 @@ from odoo.exceptions import UserError
 _logger = logging.getLogger(__name__)
 
 ROOT_PARAM = 'eurekam_knowledge_portal.root_article_id'
+EN_ROOT_PARAM = 'eurekam_knowledge_portal.en_root_article_id'
 
 
 class KnowledgeArticle(models.Model):
@@ -17,17 +18,36 @@ class KnowledgeArticle(models.Model):
     # ------------------------------------------------------------------
 
     @api.model
-    def _eurekam_kb_root_id(self):
-        """Id de l'article racine partagé avec le portail, 0 si non configuré.
+    def _eurekam_kb_param_id(self, key):
+        """Id d'article lu dans un paramètre système, 0 si absent ou invalide.
 
         ``sudo()`` limité à la lecture d'un paramètre de configuration (spec §5.4).
         """
-        value = self.env['ir.config_parameter'].sudo().get_param(ROOT_PARAM, '0')
+        value = self.env['ir.config_parameter'].sudo().get_param(key, '0')
         try:
-            root_id = int(value)
+            article_id = int(value)
         except (TypeError, ValueError):
             return 0
-        return root_id if root_id > 0 else 0
+        return article_id if article_id > 0 else 0
+
+    @api.model
+    def _eurekam_kb_root_id(self):
+        """Id de l'article racine partagé avec le portail, 0 si non configuré."""
+        return self._eurekam_kb_param_id(ROOT_PARAM)
+
+    @api.model
+    def _eurekam_kb_en_root_id(self):
+        """Id de la rubrique anglaise (sous la racine), réservée aux clients non francophones.
+
+        0 si non configurée ou hors de la base partagée : pas de tri par langue.
+        """
+        en_root_id = self._eurekam_kb_param_id(EN_ROOT_PARAM)
+        root_id = self._eurekam_kb_root_id()
+        if not en_root_id or not root_id or en_root_id == root_id:
+            return 0
+        in_tree = self.sudo().search_count(
+            [('id', '=', en_root_id), ('id', 'child_of', root_id)], limit=1)
+        return en_root_id if in_tree else 0
 
     @api.model
     def _eurekam_kb_domain(self):

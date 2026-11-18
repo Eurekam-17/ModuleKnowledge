@@ -31,8 +31,16 @@ historique. Les pages n'affichent que titre, émoji, date de mise à jour et con
 
 ## Autres bases de connaissance
 
-- **[EN] - Knowledge database (463)** est une sous-rubrique de la racine 19 : elle fait partie
-  de la base partagée et est visible par tous les clients connectés.
+- **[EN] - Knowledge database (463)** est une sous-rubrique de la racine 19, désignée par le
+  paramètre `eurekam_knowledge_portal.en_root_article_id` (463 par défaut). Tri selon la langue
+  du **compte** client (`res.users.lang`) :
+  - compte en français : toute la base 19 **sans** la rubrique anglaise, interface en français ;
+  - toute autre langue : **uniquement** la rubrique anglaise, qui devient l'accueil de `/my/kb`,
+    interface en anglais.
+  Un client qui suit un lien vers un article de l'autre langue obtient une 404. C'est un tri de
+  présentation : la règle d'accès couvre toujours toute la base 19. Paramètre à 0 ou vide, ou
+  article hors de la base 19 : pas de tri, tout le monde voit toute la base. Pour changer la
+  langue d'un client : fiche contact, champ Langue.
 - **Mc Kesson Knowledge base (334)** et **IT HEALTH Knowledge base (494)** sont des racines
   distinctes, partagées **nominativement** (membres Knowledge, dont des contacts portail). Le
   module ne les touche pas : leurs membres les consultent via le portail Knowledge natif, depuis

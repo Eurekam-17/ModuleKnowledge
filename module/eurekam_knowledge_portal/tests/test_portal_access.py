@@ -9,7 +9,7 @@ from odoo.tests import HttpCase, TransactionCase, new_test_user, tagged
 
 from ..controllers.knowledge import PORTAL_REDIRECT_ACTIVE
 from ..controllers.portal import render_portal_body
-from ..models.knowledge_article import ROOT_PARAM
+from ..models.knowledge_article import EN_ROOT_PARAM, ROOT_PARAM
 
 
 class KbPortalCommon:
@@ -202,6 +202,37 @@ class TestKbPortalHttp(KbPortalCommon, HttpCase):
         response = self.url_open(f'/my/kb/article/{self.child.id}')
         self.assertIn('/web/login', response.url)
         self.assertNotIn('KB test child', response.text)
+
+    # Rubrique anglaise : réservée aux comptes non francophones, absente pour les francophones
+    def _setup_en_audience(self):
+        if not self.env['res.lang']._lang_get('fr_FR'):
+            self.skipTest("fr_FR n'est pas installé")
+        Article = self.env['knowledge.article'].with_context(mail_create_nolog=True)
+        en_root = Article.create({'name': 'KB test EN root', 'parent_id': self.root.id})
+        en_child = Article.create({'name': 'KB test EN child', 'parent_id': en_root.id})
+        self.env['ir.config_parameter'].sudo().set_param(EN_ROOT_PARAM, str(en_root.id))
+        self.portal_user.lang = 'fr_FR'
+        en_user = new_test_user(self.env, login='kb_portal_en', groups='base.group_portal',
+                                name='KB Portal EN', lang='en_US')
+        return en_root, en_child, en_user
+
+    def test_french_account_does_not_see_english_section(self):
+        en_root, en_child, _en_user = self._setup_en_audience()
+        self.authenticate('kb_portal_test', 'kb_portal_test')
+        response = self.url_open('/my/kb')
+        self.assertIn('KB test child', response.text)
+        self.assertNotIn('KB test EN root', response.text)
+        self.assertEqual(self.url_open(f'/my/kb/article/{en_child.id}').status_code, 404)
+
+    def test_other_language_account_sees_only_english_section(self):
+        en_root, en_child, _en_user = self._setup_en_audience()
+        self.authenticate('kb_portal_en', 'kb_portal_en')
+        response = self.url_open('/my/kb')
+        self.assertIn('KB test EN child', response.text)
+        self.assertNotIn('KB test child', response.text)
+        self.assertIn('Eurekam knowledge base', response.text)
+        self.assertEqual(self.url_open(f'/my/kb/article/{en_child.id}').status_code, 200)
+        self.assertEqual(self.url_open(f'/my/kb/article/{self.child.id}').status_code, 404)
 
     def test_failsafe_page(self):
         self.env['ir.config_parameter'].sudo().set_param(ROOT_PARAM, '0')
