@@ -61,6 +61,13 @@ lui-même : retirer une fonction publique est une décision métier (choix du 20
 Une fois le module installé, réactiver « Connaissances » sur l'équipe avec cet article est bloqué
 par le garde-fou anti-republication.
 
+Après l'installation, sur le site « Support Eurekam » (fait sur la sandbox le 2026-11-18, à refaire
+en production) : le menu « FAQ » (`website.menu` n°12) et le lien « Knowledge base » de la page
+d'accueil (`website.homepage`, vue n°5899) pointaient vers
+`/helpdesk/service-sav-1/knowledge/home?auto_unfold=1`. Sans base rattachée à l'équipe, Knowledge y
+affiche le premier article encore publié (l'article 21, une page de test). Les faire pointer vers
+`/my/kb`, et dépublier l'article 21.
+
 ## ⚠️ Avant le déploiement : dépublier manuellement
 
 Le module dépublie l'arbre à l'installation, mais la **Phase 0** (spec §7.1) doit être faite dès
