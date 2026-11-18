@@ -180,6 +180,10 @@ Compte de test sur la sandbox : `kb-test@eurekam.fr` (utilisateur portail n°850
 | + | Lien KB sur `/my/tickets` | Bouton présent | ✅ |
 | + | Republier un article de l'arbre | `UserError` | _à faire_ |
 | + | Portail Knowledge natif (`/knowledge/home`) | Rien d'exposé | ✅ vide (« Pas encore d'article ») |
+| + | Compte en français (18.0.1.0.5) | Base 19 sans la rubrique [EN] | ✅ 8 rubriques, 75 articles ; `/my/kb/article/463` → 404 |
+| + | Compte en anglais (18.0.1.0.5) | Rubrique [EN] seule, interface anglaise | ✅ 5 rubriques, 24 articles, « Contents », « Updated on », manuels EN téléchargeables ; article FR 204 → 404 |
+| + | Base McKesson (`/knowledge/article/334`, interne) | Comportement natif | ✅ ouvre l'article dans Knowledge |
+| + | Carte native « Connaissances » pour un client sans partage nominatif | Masquée | ✅ compteur 0 |
 
 Anomalies trouvées pendant la recette, corrigées :
 - 18.0.1.0.1 : `/knowledge/article/<id>` en erreur 500 pour tous (signature de
