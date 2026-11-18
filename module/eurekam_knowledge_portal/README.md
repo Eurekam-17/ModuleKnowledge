@@ -43,6 +43,22 @@ rechercher `eurekam_knowledge_portal.root_article_id`.
 - Après un changement de racine, relancer la dépublication du nouvel arbre si besoin (shell :
   `env['knowledge.article']._eurekam_kb_unpublish_tree()`).
 
+## ⚠️ Prérequis : retirer la base de l'Assistance publique
+
+En production, l'article 19 est la base « Connaissances » de l'équipe d'assistance
+**Service Client**, affichée publiquement sur `/helpdesk/service-client-1`
+(`website_helpdesk_knowledge`). Odoo interdit de dépublier un article utilisé par une équipe :
+tant que c'est le cas, **l'installation du module est refusée** avec un message explicatif.
+
+Avant l'installation : *Assistance → Configuration → Équipes → Service Client*, décocher
+« Connaissances » (et vider le champ « Article » s'il reste renseigné). La page d'assistance
+publique n'affiche alors plus la base de connaissance ; les clients la retrouvent connectés sur
+`/my/kb` (un lien est ajouté sur leurs pages de tickets). Le module ne fait pas ce changement
+lui-même : retirer une fonction publique est une décision métier (choix du 2026-11-18).
+
+Une fois le module installé, réactiver « Connaissances » sur l'équipe avec cet article est bloqué
+par le garde-fou anti-republication.
+
 ## ⚠️ Avant le déploiement : dépublier manuellement
 
 Le module dépublie l'arbre à l'installation, mais la **Phase 0** (spec §7.1) doit être faite dès

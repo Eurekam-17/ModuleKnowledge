@@ -50,11 +50,40 @@ class KnowledgeArticle(models.Model):
         """
         if 'is_published' not in self._fields or not self._eurekam_kb_root_id():
             return
+        self._eurekam_kb_check_no_helpdesk_team()
         articles = self.sudo().with_context(active_test=False).search(
             self._eurekam_kb_domain() + [('is_published', '=', True)])
         if articles:
             articles.write({'is_published': False})
             _logger.info("eurekam_knowledge_portal: %s article(s) dépublié(s).", len(articles))
+
+    @api.model
+    def _eurekam_kb_check_no_helpdesk_team(self):
+        """Refuse la dépublication si une équipe d'assistance expose encore l'arborescence.
+
+        ``website_helpdesk_knowledge`` publie l'article « Connaissances » d'une équipe sur sa
+        page d'assistance publique et interdit de le dépublier. Retirer cette fonction publique
+        est une décision métier : on ne le fait pas automatiquement, on explique quoi faire.
+        """
+        if 'helpdesk.team' not in self.env:
+            return
+        Team = self.env['helpdesk.team']
+        if 'website_article_id' not in Team._fields:
+            return
+        teams = Team.sudo().with_context(active_test=False).search([
+            ('website_article_id', 'child_of', self._eurekam_kb_root_id()),
+        ])
+        if teams:
+            raise UserError(_(
+                "La base de connaissance ne peut pas être réservée au portail : elle est encore "
+                "affichée publiquement par l'Assistance.\n\n"
+                "Équipe(s) concernée(s) : %(teams)s.\n\n"
+                "Avant d'installer ce module, ouvrir Assistance → Configuration → Équipes, puis "
+                "pour chacune décocher « Connaissances » (et vider le champ « Article » s'il reste "
+                "renseigné). La page d'assistance publique n'affichera plus la base de "
+                "connaissance ; les clients la retrouveront connectés sur /my/kb.",
+                teams=', '.join(teams.mapped('display_name')),
+            ))
 
     # ------------------------------------------------------------------
     # Garde-fou : interdiction de republier un article du périmètre portail
