@@ -31,7 +31,10 @@ if PORTAL_REDIRECT_ACTIVE:
     class EurekamKnowledgeController(KnowledgeController):
 
         @http.route()
-        def redirect_to_article(self, article_id, **kwargs):
-            if request.env.user._is_portal():
+        def redirect_to_article(self, *args, **kwargs):
+            # Signature transmise telle quelle : la version de website_knowledge n'accepte que
+            # des arguments nommés (article_id compris) ; un appel positionnel lève TypeError.
+            article_id = kwargs.get('article_id', args[0] if args else None)
+            if article_id and request.env.user._is_portal():
                 return request.redirect(f'/my/kb/article/{int(article_id)}')
-            return super().redirect_to_article(article_id, **kwargs)
+            return super().redirect_to_article(*args, **kwargs)

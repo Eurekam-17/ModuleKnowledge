@@ -152,6 +152,12 @@ class TestKbPortalHttp(KbPortalCommon, HttpCase):
         response = self.url_open(f'/knowledge/article/{self.outside.id}')
         self.assertEqual(response.status_code, 404)
 
+    # §8.6 : la route native reste fonctionnelle pour les internes (régression 500 du 2026-11-18)
+    def test_native_route_still_works_for_internal(self):
+        self.authenticate('kb_internal_test', 'kb_internal_test')
+        response = self.url_open(f'/knowledge/article/{self.outside.id}')
+        self.assertNotEqual(response.status_code, 500)
+
     # §3.3 : rien pour l'anonyme
     def test_anonymous_is_sent_to_login(self):
         response = self.url_open(f'/my/kb/article/{self.child.id}')
