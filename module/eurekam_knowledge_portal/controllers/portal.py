@@ -114,12 +114,16 @@ class KnowledgePortal(CustomerPortal):
 
     def _prepare_home_portal_values(self, counters):
         values = super()._prepare_home_portal_values(counters)
+        Article = self._kb_article_model()
+        root_id = Article._eurekam_kb_root_id()
         if 'eurekam_kb_count' in counters:
-            Article = self._kb_article_model()
-            values['eurekam_kb_count'] = (
-                Article.search_count(self._kb_nav_domain())
-                if Article._eurekam_kb_root_id() else 0
-            )
+            values['eurekam_kb_count'] = Article.search_count(self._kb_nav_domain()) if root_id else 0
+        if 'knowledge_count' in counters and root_id and request.env.user.share:
+            # Carte native « Connaissances » : pour un client, elle ne doit compter que les
+            # articles partagés nominativement (McKesson, IT HEALTH…), pas la base partagée
+            # que notre règle rend lisible. À 0, le portail masque la carte.
+            values['knowledge_count'] = Article.search_count(
+                ['!', ('id', 'child_of', root_id)])
         return values
 
     # ------------------------------------------------------------------

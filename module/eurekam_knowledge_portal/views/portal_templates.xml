@@ -17,17 +17,6 @@
     </template>
 
     <!-- ============================================================
-         Carte native « Connaissances » (knowledge.portal_my_home_knowledge) :
-         pour un client, elle mène à une page vide ; la base est sur /my/kb.
-         Masquée pour les utilisateurs portail, conservée pour les internes.
-         ============================================================ -->
-    <template id="portal_my_home_hide_native_knowledge" name="Masquer la carte Connaissances native" inherit_id="knowledge.portal_my_home_knowledge">
-        <xpath expr="//t[@t-call='portal.portal_docs_entry'][t[@t-set='url'][@t-value=&quot;'/knowledge/home'&quot;]]" position="attributes">
-            <attribute name="t-if">not request.env.user.share</attribute>
-        </xpath>
-    </template>
-
-    <!-- ============================================================
          Fil d'Ariane portail
          + lien KB sur les pages Helpdesk (/my/ticket*), sans dépendre de helpdesk
          ============================================================ -->

@@ -29,6 +29,19 @@ lecture du paramètre système et la dépublication à l'installation sont en `s
 L'utilisateur portail ne voit jamais : membres des articles, auteurs, autres utilisateurs portail,
 historique. Les pages n'affichent que titre, émoji, date de mise à jour et contenu.
 
+## Autres bases de connaissance
+
+- **[EN] - Knowledge database (463)** est une sous-rubrique de la racine 19 : elle fait partie
+  de la base partagée et est visible par tous les clients connectés.
+- **Mc Kesson Knowledge base (334)** et **IT HEALTH Knowledge base (494)** sont des racines
+  distinctes, partagées **nominativement** (membres Knowledge, dont des contacts portail). Le
+  module ne les touche pas : leurs membres les consultent via le portail Knowledge natif, depuis
+  la carte « Connaissances » de `/my`. Pour un client, cette carte ne compte que les articles
+  partagés avec lui hors de la base 19 : elle n'apparaît donc que pour les membres de ces bases.
+  `/knowledge/article/<id>` n'est redirigé vers `/my/kb` que pour les articles de la base 19.
+  Rappel : dans ce mode natif, chaque membre voit la liste des autres membres (choix assumé par
+  l'équipe pour ces deux bases).
+
 ## Configuration après installation
 
 Paramètre système **`eurekam_knowledge_portal.root_article_id`** = id de l'article racine

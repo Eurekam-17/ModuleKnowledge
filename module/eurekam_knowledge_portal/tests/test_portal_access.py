@@ -171,8 +171,25 @@ class TestKbPortalHttp(KbPortalCommon, HttpCase):
         self.authenticate('kb_portal_test', 'kb_portal_test')
         response = self.url_open(f'/knowledge/article/{self.child.id}')
         self.assertTrue(response.url.endswith(f'/my/kb/article/{self.child.id}'), response.url)
+        # Hors base partagée : comportement natif, jamais le contenu d'un article non partagé
         response = self.url_open(f'/knowledge/article/{self.outside.id}')
-        self.assertEqual(response.status_code, 404)
+        self.assertNotIn('/my/kb/', response.url)
+        self.assertNotEqual(response.status_code, 500)
+        self.assertNotIn('KB test outside', response.text)
+
+    # Bases partagées nominativement (McKesson…) : le membre portail garde l'accès natif
+    def test_member_keeps_native_access_outside_tree(self):
+        if not PORTAL_REDIRECT_ACTIVE:
+            self.skipTest("KnowledgeController.redirect_to_article introuvable")
+        self.env['knowledge.article.member'].create({
+            'article_id': self.outside.id,
+            'partner_id': self.portal_user.partner_id.id,
+            'permission': 'read',
+        })
+        self.authenticate('kb_portal_test', 'kb_portal_test')
+        response = self.url_open(f'/knowledge/article/{self.outside.id}')
+        self.assertNotIn('/my/kb/', response.url)
+        self.assertNotEqual(response.status_code, 500)
 
     # §8.6 : la route native reste fonctionnelle pour les internes (régression 500 du 2026-11-18)
     def test_native_route_still_works_for_internal(self):
