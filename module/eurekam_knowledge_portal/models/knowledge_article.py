@@ -64,6 +64,11 @@ class KnowledgeArticle(models.Model):
         ``website_helpdesk_knowledge`` publie l'article « Connaissances » d'une équipe sur sa
         page d'assistance publique et interdit de le dépublier. Retirer cette fonction publique
         est une décision métier : on ne le fait pas automatiquement, on explique quoi faire.
+
+        Décocher « Connaissances » sur l'équipe ne vide pas ``website_article_id`` (champ alors
+        masqué, impossible à vider dans l'interface), et ce lien résiduel suffit à bloquer la
+        dépublication. Quand la case est déjà décochée, la décision est prise : on retire le
+        lien résiduel.
         """
         if 'helpdesk.team' not in self.env:
             return
@@ -73,17 +78,25 @@ class KnowledgeArticle(models.Model):
         teams = Team.sudo().with_context(active_test=False).search([
             ('website_article_id', 'child_of', self._eurekam_kb_root_id()),
         ])
-        if teams:
+        if 'use_website_helpdesk_knowledge' in Team._fields:
+            publishing = teams.filtered('use_website_helpdesk_knowledge')
+        else:
+            publishing = teams
+        if publishing:
             raise UserError(_(
                 "La base de connaissance ne peut pas être réservée au portail : elle est encore "
                 "affichée publiquement par l'Assistance.\n\n"
                 "Équipe(s) concernée(s) : %(teams)s.\n\n"
                 "Avant d'installer ce module, ouvrir Assistance → Configuration → Équipes, puis "
-                "pour chacune décocher « Connaissances » (et vider le champ « Article » s'il reste "
-                "renseigné). La page d'assistance publique n'affichera plus la base de "
-                "connaissance ; les clients la retrouveront connectés sur /my/kb.",
-                teams=', '.join(teams.mapped('display_name')),
+                "pour chacune décocher « Connaissances » et enregistrer. La page d'assistance "
+                "publique n'affichera plus la base de connaissance ; les clients la retrouveront "
+                "connectés sur /my/kb.",
+                teams=', '.join(publishing.mapped('display_name')),
             ))
+        if teams:
+            teams.write({'website_article_id': False})
+            _logger.info("eurekam_knowledge_portal: lien résiduel vers la base retiré des "
+                         "équipes d'assistance %s.", teams.ids)
 
     # ------------------------------------------------------------------
     # Garde-fou : interdiction de republier un article du périmètre portail

@@ -51,7 +51,9 @@ En production, l'article 19 est la base « Connaissances » de l'équipe d'assis
 tant que c'est le cas, **l'installation du module est refusée** avec un message explicatif.
 
 Avant l'installation : *Assistance → Configuration → Équipes → Service Client*, décocher
-« Connaissances » (et vider le champ « Article » s'il reste renseigné). La page d'assistance
+« Connaissances » et enregistrer. Odoo laisse alors l'article rattaché à l'équipe dans un champ
+masqué (`website_article_id`), ce qui suffit à bloquer la dépublication : le module retire
+lui-même ce lien résiduel, uniquement sur les équipes où « Connaissances » est déjà décoché. La page d'assistance
 publique n'affiche alors plus la base de connaissance ; les clients la retrouvent connectés sur
 `/my/kb` (un lien est ajouté sur leurs pages de tickets). Le module ne fait pas ce changement
 lui-même : retirer une fonction publique est une décision métier (choix du 2026-11-18).
