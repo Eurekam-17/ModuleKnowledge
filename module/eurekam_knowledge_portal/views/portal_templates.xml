@@ -75,8 +75,8 @@
                                 <span class="fs-3 lh-1" t-out="child.icon or '📄'"/>
                                 <div class="flex-grow-1 min-w-0">
                                     <h5 class="card-title mb-1 text-truncate" t-out="child.name"/>
-                                    <small class="text-muted">
-                                        Mis à jour le <span t-field="child.write_date" t-options="{'widget': 'date'}"/>
+                                    <small t-if="child.last_edition_date" class="text-muted">
+                                        Mis à jour le <span t-field="child.last_edition_date" t-options="{'widget': 'date'}"/>
                                     </small>
                                 </div>
                                 <i class="fa fa-chevron-right text-muted align-self-center" title="Ouvrir" aria-hidden="true"/>
@@ -110,17 +110,17 @@
                     </div>
                 </aside>
                 <!-- Contenu -->
-                <main class="col-12 col-lg-9 order-1 order-lg-2">
+                <div class="col-12 col-lg-9 order-1 order-lg-2">
                     <div class="card">
                         <div class="card-body">
                             <div class="d-flex align-items-center gap-2 mb-1">
                                 <span class="fs-2 lh-1" t-out="article.icon or '📄'"/>
                                 <h1 class="h2 mb-0" t-out="article.name"/>
                             </div>
-                            <small class="text-muted d-block mb-4">
-                                Mis à jour le <span t-field="article.write_date" t-options="{'widget': 'date'}"/>
+                            <small t-if="article.last_edition_date" class="text-muted d-block mb-4">
+                                Mis à jour le <span t-field="article.last_edition_date" t-options="{'widget': 'date'}"/>
                             </small>
-                            <div class="o_eurekam_kb_body" t-out="article.body"/>
+                            <div class="o_eurekam_kb_body mt-3" t-out="body"/>
                         </div>
                     </div>
                     <div t-if="children" class="card mt-3">
@@ -138,7 +138,7 @@
                             <i class="fa fa-arrow-left me-1"/>Retour au sommaire
                         </a>
                     </div>
-                </main>
+                </div>
             </div>
         </t>
     </template>

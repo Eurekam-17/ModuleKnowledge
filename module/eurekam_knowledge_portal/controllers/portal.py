@@ -1,9 +1,84 @@
 # -*- coding: utf-8 -*-
+import json
+import logging
+from urllib.parse import quote
+
+from lxml import etree, html as lxml_html
+from markupsafe import Markup
+
 from odoo import http
 from odoo.http import request
 from odoo.addons.portal.controllers.portal import CustomerPortal
 
+_logger = logging.getLogger(__name__)
+
 NAV_ORDER = 'sequence, name, id'
+
+
+def _drop_node(node):
+    """Retire ``node`` de l'arbre en conservant le texte qui le suit (tail)."""
+    parent = node.getparent()
+    if parent is None:
+        return
+    if node.tail:
+        previous = node.getprevious()
+        if previous is not None:
+            previous.tail = (previous.tail or '') + node.tail
+        else:
+            parent.text = (parent.text or '') + node.tail
+    parent.remove(node)
+
+
+def _file_link(props):
+    """Lien de téléchargement pour un bloc Knowledge ``data-embedded="file"``.
+
+    Le bloc n'est rendu que par le JavaScript de l'éditeur Knowledge ; côté portail il
+    resterait vide. Les propriétés portent l'id et le jeton d'accès de la pièce jointe :
+    ``/web/content`` vérifie lui-même ce jeton, aucun droit supplémentaire n'est accordé.
+    """
+    try:
+        data = json.loads(props or '{}').get('fileData') or {}
+        attachment_id = int(data['id'])
+    except (ValueError, TypeError, KeyError, AttributeError):
+        return None
+    name = str(data.get('name') or data.get('filename') or 'Fichier')
+    href = f'/web/content/{attachment_id}?download=true'
+    token = data.get('access_token')
+    if token:
+        href += f'&access_token={quote(str(token), safe="")}'
+    link = etree.Element('a', {
+        'href': href,
+        'class': 'btn btn-light border d-inline-flex align-items-center gap-2 my-1 me-1 o_eurekam_kb_file',
+    })
+    icon_class = 'fa fa-file-pdf-o' if str(data.get('extension')).lower() == 'pdf' else 'fa fa-file-o'
+    icon = etree.SubElement(link, 'i', {'class': icon_class, 'title': 'Télécharger', 'aria-hidden': 'true'})
+    icon.tail = name
+    return link
+
+
+def render_portal_body(body):
+    """Corps d'article affichable sans le JavaScript de Knowledge.
+
+    - ``file`` : remplacé par un lien de téléchargement ;
+    - autres blocs embarqués (``articleIndex``…) : retirés, la page portail affiche déjà
+      la liste des sous-articles.
+    """
+    if not body:
+        return body
+    try:
+        root = lxml_html.fragment_fromstring(str(body), create_parent='div')
+    except (etree.ParserError, ValueError):
+        return body
+    for node in root.xpath('//*[@data-embedded]'):
+        if node.getparent() is None:
+            continue
+        link = _file_link(node.get('data-embedded-props')) if node.get('data-embedded') == 'file' else None
+        if link is not None:
+            link.tail = node.tail
+            node.getparent().replace(node, link)
+        else:
+            _drop_node(node)
+    return Markup(lxml_html.tostring(root, encoding='unicode'))
 
 
 class KnowledgePortal(CustomerPortal):
@@ -87,6 +162,7 @@ class KnowledgePortal(CustomerPortal):
         return request.render('eurekam_knowledge_portal.portal_kb_article', {
             'root': root,
             'article': article,
+            'body': render_portal_body(article.body),
             'ancestors': self._kb_ancestors(article, root),
             'siblings': siblings,
             'children': children,

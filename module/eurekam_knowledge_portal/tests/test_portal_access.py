@@ -8,6 +8,7 @@ from odoo.exceptions import AccessError, UserError
 from odoo.tests import HttpCase, TransactionCase, new_test_user, tagged
 
 from ..controllers.knowledge import PORTAL_REDIRECT_ACTIVE
+from ..controllers.portal import render_portal_body
 from ..models.knowledge_article import ROOT_PARAM
 
 
@@ -113,6 +114,27 @@ class TestKbPortalAccess(KbPortalCommon, TransactionCase):
         own = [name for name in dir(Article) if 'eurekam' in name]
         self.assertTrue(own)
         self.assertTrue(all(name.startswith('_') for name in own), own)
+
+
+@tagged('post_install', '-at_install')
+class TestKbPortalBody(TransactionCase):
+    """Blocs embarqués Knowledge, rendus seulement par le JavaScript de l'éditeur."""
+
+    def test_embedded_file_becomes_download_link(self):
+        body = ('<p>Avant <span data-embedded="file" data-embedded-props=\'{"fileData": '
+                '{"access_token": "tok", "extension": "pdf", "id": 42, "name": "Manuel.pdf"}}\'>'
+                '</span> après</p><div data-embedded="articleIndex"></div><p>fin</p>')
+        out = render_portal_body(body)
+        self.assertIn('href="/web/content/42?download=true&amp;access_token=tok"', out)
+        self.assertIn('Manuel.pdf', out)
+        self.assertIn(' après', out)
+        self.assertIn('<p>fin</p>', out)
+        self.assertNotIn('data-embedded', out)
+
+    def test_malformed_embedded_block_is_dropped(self):
+        out = render_portal_body('<p>a<span data-embedded="file" data-embedded-props="x"></span>b</p>')
+        self.assertIn('ab', out)
+        self.assertNotIn('data-embedded', out)
 
 
 @tagged('post_install', '-at_install')
