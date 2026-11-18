@@ -114,9 +114,9 @@ class KnowledgePortal(CustomerPortal):
 
     def _prepare_home_portal_values(self, counters):
         values = super()._prepare_home_portal_values(counters)
-        if 'knowledge_count' in counters:
+        if 'eurekam_kb_count' in counters:
             Article = self._kb_article_model()
-            values['knowledge_count'] = (
+            values['eurekam_kb_count'] = (
                 Article.search_count(self._kb_nav_domain())
                 if Article._eurekam_kb_root_id() else 0
             )
