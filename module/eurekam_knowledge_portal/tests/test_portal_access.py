@@ -9,7 +9,7 @@ from odoo.tests import HttpCase, TransactionCase, new_test_user, tagged
 
 from ..controllers.knowledge import PORTAL_REDIRECT_ACTIVE
 from ..controllers.portal import render_portal_body
-from ..models.knowledge_article import EN_ROOT_PARAM, ROOT_PARAM
+from ..models.knowledge_article import LANG_ROOTS_PARAM, ROOT_PARAM, parse_lang_roots
 
 
 class KbPortalCommon:
@@ -117,6 +117,18 @@ class TestKbPortalAccess(KbPortalCommon, TransactionCase):
 
 
 @tagged('post_install', '-at_install')
+class TestKbLangRoots(TransactionCase):
+
+    def test_parse_lang_roots(self):
+        self.assertEqual(parse_lang_roots(' en : 463 , de:520; it:530'),
+                         {'en': 463, 'de': 520, 'it': 530})
+        self.assertEqual(parse_lang_roots('fr:19, en:463'), {'en': 463})
+        self.assertEqual(parse_lang_roots('de_DE:520'), {'de': 520})
+        self.assertEqual(parse_lang_roots('aucun'), {})
+        self.assertEqual(parse_lang_roots('en:abc, de:-3'), {})
+
+
+@tagged('post_install', '-at_install')
 class TestKbPortalBody(TransactionCase):
     """Blocs embarqués Knowledge, rendus seulement par le JavaScript de l'éditeur."""
 
@@ -210,7 +222,7 @@ class TestKbPortalHttp(KbPortalCommon, HttpCase):
         Article = self.env['knowledge.article'].with_context(mail_create_nolog=True)
         en_root = Article.create({'name': 'KB test EN root', 'parent_id': self.root.id})
         en_child = Article.create({'name': 'KB test EN child', 'parent_id': en_root.id})
-        self.env['ir.config_parameter'].sudo().set_param(EN_ROOT_PARAM, str(en_root.id))
+        self.env['ir.config_parameter'].sudo().set_param(LANG_ROOTS_PARAM, f'en:{en_root.id}')
         self.portal_user.lang = 'fr_FR'
         en_user = new_test_user(self.env, login='kb_portal_en', groups='base.group_portal',
                                 name='KB Portal EN', lang='en_US')
@@ -233,6 +245,42 @@ class TestKbPortalHttp(KbPortalCommon, HttpCase):
         self.assertIn('Eurekam knowledge base', response.text)
         self.assertEqual(self.url_open(f'/my/kb/article/{en_child.id}').status_code, 200)
         self.assertEqual(self.url_open(f'/my/kb/article/{self.child.id}').status_code, 404)
+
+    # Langue sans rubrique (allemand) : repli sur la rubrique anglaise, interface anglaise
+    def test_language_without_section_falls_back_to_english(self):
+        if not self.env['res.lang']._lang_get('de_DE'):
+            self.skipTest("de_DE n'est pas installé")
+        _en_root, _en_child, _en_user = self._setup_en_audience()
+        new_test_user(self.env, login='kb_portal_de', groups='base.group_portal',
+                      name='KB Portal DE', lang='de_DE')
+        self.authenticate('kb_portal_de', 'kb_portal_de')
+        response = self.url_open('/my/kb')
+        self.assertIn('KB test EN child', response.text)
+        self.assertIn('Eurekam knowledge base', response.text)
+
+    # Langue avec sa rubrique (allemand) : sa rubrique seule, interface allemande
+    def test_language_with_its_own_section(self):
+        if not self.env['res.lang']._lang_get('de_DE'):
+            self.skipTest("de_DE n'est pas installé")
+        en_root, _en_child, _en_user = self._setup_en_audience()
+        Article = self.env['knowledge.article'].with_context(mail_create_nolog=True)
+        de_root = Article.create({'name': 'KB test DE root', 'parent_id': self.root.id})
+        Article.create({'name': 'KB test DE child', 'parent_id': de_root.id})
+        self.env['ir.config_parameter'].sudo().set_param(
+            LANG_ROOTS_PARAM, f'en:{en_root.id}, de:{de_root.id}')
+        new_test_user(self.env, login='kb_portal_de', groups='base.group_portal',
+                      name='KB Portal DE', lang='de_DE')
+        self.authenticate('kb_portal_de', 'kb_portal_de')
+        response = self.url_open('/my/kb')
+        self.assertIn('KB test DE child', response.text)
+        self.assertNotIn('KB test EN child', response.text)
+        self.assertIn('Eurekam Wissensdatenbank', response.text)
+        # Le compte français ne voit ni l'anglais ni l'allemand
+        self.authenticate('kb_portal_test', 'kb_portal_test')
+        response = self.url_open('/my/kb')
+        self.assertIn('KB test child', response.text)
+        self.assertNotIn('KB test DE root', response.text)
+        self.assertNotIn('KB test EN root', response.text)
 
     def test_failsafe_page(self):
         self.env['ir.config_parameter'].sudo().set_param(ROOT_PARAM, '0')

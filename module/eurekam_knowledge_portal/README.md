@@ -31,16 +31,30 @@ historique. Les pages n'affichent que titre, émoji, date de mise à jour et con
 
 ## Autres bases de connaissance
 
-- **[EN] - Knowledge database (463)** est une sous-rubrique de la racine 19, désignée par le
-  paramètre `eurekam_knowledge_portal.en_root_article_id` (463 par défaut). Tri selon la langue
-  du **compte** client (`res.users.lang`) :
-  - compte en français : toute la base 19 **sans** la rubrique anglaise, interface en français ;
-  - toute autre langue : **uniquement** la rubrique anglaise, qui devient l'accueil de `/my/kb`,
-    interface en anglais.
-  Un client qui suit un lien vers un article de l'autre langue obtient une 404. C'est un tri de
-  présentation : la règle d'accès couvre toujours toute la base 19. Paramètre à 0 ou vide, ou
-  article hors de la base 19 : pas de tri, tout le monde voit toute la base. Pour changer la
-  langue d'un client : fiche contact, champ Langue.
+- **Bases par langue.** Le français est la base 19 elle-même. Les autres langues ont chacune
+  une rubrique **sous** la racine 19, déclarée dans le paramètre
+  `eurekam_knowledge_portal.lang_root_articles` (aujourd'hui `en:463`, « [EN] - Knowledge
+  database »). Tri selon la langue du **compte** client (`res.users.lang`, champ Langue de la
+  fiche contact) :
+  - compte en français : la base 19 **sans** les rubriques de langue, interface en français ;
+  - compte dans une langue déclarée : **uniquement** sa rubrique, qui devient l'accueil de
+    `/my/kb`, interface dans sa langue ;
+  - toute autre langue : la rubrique **anglaise** (langue de repli), interface en anglais.
+  Un client qui suit un lien vers un article d'une autre langue obtient une 404. C'est un tri de
+  présentation : la règle d'accès couvre toujours toute la base 19. Paramètre vide ou `aucun` :
+  pas de tri, tout le monde voit toute la base. Une rubrique hors de la base 19 est ignorée.
+
+  **Ajouter une langue** (ex. l'allemand), sans toucher au code :
+  1. Dans Connaissances, créer sous l'article 19 une rubrique « [DE] - Wissensdatenbank » et y
+     placer les articles et manuels en allemand ; noter son id (dans l'URL).
+  2. *Paramètres → Langues* : activer l'allemand s'il ne l'est pas.
+  3. *Paramètres → Technique → Paramètres système* : compléter
+     `eurekam_knowledge_portal.lang_root_articles`, par ex. `en:463, de:520`.
+  4. Mettre les clients concernés en allemand (fiche contact, champ Langue).
+  Les libellés d'interface existent déjà en **fr, en, de, it, es** (`KB_LABELS` dans
+  `controllers/portal.py` ; de, it et es sont à faire relire par un natif). Pour une autre
+  langue (ex. néerlandais), ajouter un dictionnaire à `KB_LABELS` : sinon l'interface est en
+  anglais, le contenu restant celui de sa rubrique.
 - **Mc Kesson Knowledge base (334)** et **IT HEALTH Knowledge base (494)** sont des racines
   distinctes, partagées **nominativement** (membres Knowledge, dont des contacts portail). Le
   module ne les touche pas : leurs membres les consultent via le portail Knowledge natif, depuis

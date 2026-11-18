@@ -8,9 +8,8 @@
         <xpath expr="//div[@id='portal_common_category']" position="inside">
             <t t-call="portal.portal_docs_entry">
                 <t t-set="icon" t-value="'/eurekam_knowledge_portal/static/src/img/knowledge.svg'"/>
-                <t t-set="kb_fr" t-value="(request.env.user.lang or '').startswith('fr')"/>
-                <t t-set="title" t-value="'Base de connaissance Eurekam' if kb_fr else 'Eurekam knowledge base'"/>
-                <t t-set="text" t-value="'Guides, procédures et réponses aux questions fréquentes' if kb_fr else 'Guides, procedures and answers to frequently asked questions'"/>
+                <t t-set="title" t-value="kb_labels['kb_full'] if kb_labels else 'Base de connaissance Eurekam'"/>
+                <t t-set="text" t-value="kb_labels['card_text'] if kb_labels else 'Guides, procédures et réponses aux questions fréquentes'"/>
                 <t t-set="url" t-value="'/my/kb'"/>
                 <t t-set="placeholder_count" t-value="'eurekam_kb_count'"/>
             </t>
@@ -35,7 +34,7 @@
         <xpath expr="//ol[hasclass('o_portal_submenu')]" position="after">
             <a t-if="request and request.httprequest.path.startswith('/my/ticket')"
                href="/my/kb" class="btn btn-sm btn-light ms-2 text-nowrap o_eurekam_kb_ticket_link">
-                <t t-set="kb_ticket_label" t-value="'Base de connaissance' if (request.env.user.lang or '').startswith('fr') else 'Knowledge base'"/>
+                <t t-set="kb_ticket_label" t-value="kb_labels['kb'] if kb_labels else 'Base de connaissance'"/>
                 <i class="fa fa-book me-1" role="img" t-att-aria-label="kb_ticket_label"/><t t-out="kb_ticket_label"/>
             </a>
         </xpath>

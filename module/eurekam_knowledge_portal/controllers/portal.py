@@ -81,12 +81,15 @@ def render_portal_body(body):
     return Markup(lxml_html.tostring(root, encoding='unicode'))
 
 
-# Libellés de l'interface portail, selon la langue du compte client. Littéraux (et non _())
-# car les chaînes Python des modules Eurekam ne sont pas traduites sur ce déploiement.
+# Libellés de l'interface portail, par langue d'interface. Littéraux (et non _()) car les
+# chaînes Python des modules Eurekam ne sont pas traduites sur ce déploiement.
+# Nouvelle langue : ajouter un dictionnaire avec les mêmes clés (traduction à faire relire).
+# Langue sans dictionnaire : anglais.
 KB_LABELS = {
     'fr': {
         'kb': "Base de connaissance",
         'kb_full': "Base de connaissance Eurekam",
+        'card_text': "Guides, procédures et réponses aux questions fréquentes",
         'summary': "Sommaire",
         'updated': "Mis à jour le",
         'in_section': "Dans cette section",
@@ -102,6 +105,7 @@ KB_LABELS = {
     'en': {
         'kb': "Knowledge base",
         'kb_full': "Eurekam knowledge base",
+        'card_text': "Guides, procedures and answers to frequently asked questions",
         'summary': "Contents",
         'updated': "Updated on",
         'in_section': "In this section",
@@ -113,12 +117,61 @@ KB_LABELS = {
         'unavailable_text': "The knowledge base is not yet available from your customer area. "
                             "Please contact Eurekam Customer Service if the problem persists.",
     },
+    # Allemand, italien, espagnol : prêts pour de futures rubriques, à faire relire.
+    'de': {
+        'kb': "Wissensdatenbank",
+        'kb_full': "Eurekam Wissensdatenbank",
+        'card_text': "Anleitungen, Verfahren und Antworten auf häufig gestellte Fragen",
+        'summary': "Inhalt",
+        'updated': "Aktualisiert am",
+        'in_section': "In diesem Abschnitt",
+        'back_to': "Zurück zu",
+        'back_summary': "Zurück zum Inhalt",
+        'empty': "Derzeit ist kein Artikel verfügbar.",
+        'open': "Öffnen",
+        'unavailable': "Wissensdatenbank nicht verfügbar",
+        'unavailable_text': "Die Wissensdatenbank ist in Ihrem Kundenbereich noch nicht "
+                            "verfügbar. Bitte wenden Sie sich an den Eurekam-Kundendienst, wenn "
+                            "das Problem weiterhin besteht.",
+    },
+    'it': {
+        'kb': "Base di conoscenza",
+        'kb_full': "Base di conoscenza Eurekam",
+        'card_text': "Guide, procedure e risposte alle domande frequenti",
+        'summary': "Sommario",
+        'updated': "Aggiornato il",
+        'in_section': "In questa sezione",
+        'back_to': "Torna a",
+        'back_summary': "Torna al sommario",
+        'empty': "Nessun articolo è disponibile al momento.",
+        'open': "Apri",
+        'unavailable': "Base di conoscenza non disponibile",
+        'unavailable_text': "La base di conoscenza non è ancora accessibile dalla tua area "
+                            "clienti. Se il problema persiste, contatta il Servizio Clienti "
+                            "Eurekam.",
+    },
+    'es': {
+        'kb': "Base de conocimiento",
+        'kb_full': "Base de conocimiento Eurekam",
+        'card_text': "Guías, procedimientos y respuestas a las preguntas frecuentes",
+        'summary': "Índice",
+        'updated': "Actualizado el",
+        'in_section': "En esta sección",
+        'back_to': "Volver a",
+        'back_summary': "Volver al índice",
+        'empty': "No hay ningún artículo disponible por el momento.",
+        'open': "Abrir",
+        'unavailable': "Base de conocimiento no disponible",
+        'unavailable_text': "La base de conocimiento aún no está disponible desde su área de "
+                            "cliente. Póngase en contacto con el Servicio al Cliente de Eurekam "
+                            "si el problema persiste.",
+    },
 }
 
 
-def kb_lang(user):
-    """'fr' pour un compte en français, 'en' pour toute autre langue."""
-    return 'fr' if (user.lang or '').startswith('fr') else 'en'
+def kb_labels(lang):
+    """Libellés pour la langue d'interface ``lang`` (deux lettres), anglais par défaut."""
+    return KB_LABELS.get(lang) or KB_LABELS['en']
 
 
 class KnowledgePortal(CustomerPortal):
@@ -132,28 +185,23 @@ class KnowledgePortal(CustomerPortal):
         return request.env['knowledge.article']
 
     def _kb_audience(self):
-        """Partie de la base présentée à ce client, selon la langue de son compte.
+        """``(racine, domaine, langue d'interface)`` pour le compte connecté.
 
-        Retourne ``(racine, domaine)`` ; racine 0 si la base n'est pas configurée.
-        - pas de rubrique anglaise configurée : toute la base ;
-        - compte en français : la base sans la rubrique anglaise ;
-        - autre langue : la rubrique anglaise seule, qui devient la racine affichée.
-        Tri de présentation, pas de sécurité : l'ir.rule couvre toujours la base entière.
+        Voir ``knowledge.article._eurekam_kb_audience`` : rubrique de sa langue, sinon
+        rubrique anglaise (repli) ; base sans rubriques de langue pour un compte français.
         """
-        Article = self._kb_article_model()
-        root_id = Article._eurekam_kb_root_id()
-        if not root_id:
-            return 0, []
-        en_root_id = Article._eurekam_kb_en_root_id()
-        if not en_root_id:
-            return root_id, [('id', 'child_of', root_id)]
-        if kb_lang(request.env.user) == 'fr':
-            return root_id, [('id', 'child_of', root_id), '!', ('id', 'child_of', en_root_id)]
-        return en_root_id, [('id', 'child_of', en_root_id)]
+        return self._kb_article_model()._eurekam_kb_audience(request.env.user.lang)
 
-    def _kb_values(self, **values):
-        lang = kb_lang(request.env.user)
-        values.update({'kb_labels': KB_LABELS[lang], 'kb_lang': lang})
+    def _kb_values(self, ui_lang=None, **values):
+        if ui_lang is None:
+            ui_lang = self._kb_audience()[2]
+        values.update({'kb_labels': kb_labels(ui_lang), 'kb_lang': ui_lang})
+        return values
+
+    def _prepare_portal_layout_values(self):
+        # Libellés de la carte /my et du lien depuis les tickets, dans la langue du client.
+        values = super()._prepare_portal_layout_values()
+        values.setdefault('kb_labels', kb_labels(self._kb_audience()[2]))
         return values
 
     def _kb_nav_domain(self, audience_domain, extra=None):
@@ -181,7 +229,7 @@ class KnowledgePortal(CustomerPortal):
         Article = self._kb_article_model()
         root_id = Article._eurekam_kb_root_id()
         if 'eurekam_kb_count' in counters:
-            audience_root, audience_domain = self._kb_audience()
+            audience_root, audience_domain, ui_lang = self._kb_audience()
             values['eurekam_kb_count'] = (
                 Article.search_count(self._kb_nav_domain(audience_domain)) if audience_root else 0)
         if 'knowledge_count' in counters and root_id and request.env.user.share:
@@ -199,15 +247,16 @@ class KnowledgePortal(CustomerPortal):
     @http.route(['/my/kb'], type='http', auth='user', website=True)
     def portal_my_kb(self, **kw):
         Article = self._kb_article_model()
-        audience_root, audience_domain = self._kb_audience()
+        audience_root, audience_domain, ui_lang = self._kb_audience()
         root = Article.search([('id', '=', audience_root)], limit=1) if audience_root else Article
         if not root:
             # Paramètre absent/invalide ou racine inaccessible : aucun article exposé.
             return request.render('eurekam_knowledge_portal.portal_no_kb',
-                                  self._kb_values(page_name='kb'))
+                                  self._kb_values(ui_lang, page_name='kb'))
         children = Article.search(
             self._kb_nav_domain(audience_domain, [('parent_id', '=', root.id)]), order=NAV_ORDER)
         return request.render('eurekam_knowledge_portal.portal_kb_index', self._kb_values(
+            ui_lang,
             root=root,
             children=children,
             page_name='kb',
@@ -216,10 +265,10 @@ class KnowledgePortal(CustomerPortal):
     @http.route(['/my/kb/article/<int:article_id>'], type='http', auth='user', website=True)
     def portal_my_kb_article(self, article_id, **kw):
         Article = self._kb_article_model()
-        audience_root, audience_domain = self._kb_audience()
+        audience_root, audience_domain, ui_lang = self._kb_audience()
         if not audience_root:
             return request.render('eurekam_knowledge_portal.portal_no_kb',
-                                  self._kb_values(page_name='kb'))
+                                  self._kb_values(ui_lang, page_name='kb'))
         # Contrôle explicite du périmètre (en plus de l'ir.rule) : un article accessible par
         # un autre biais (ex. membre natif Knowledge), ou destiné à l'autre langue → 404.
         article = Article.search([('id', '=', article_id)] + audience_domain, limit=1)
@@ -234,6 +283,7 @@ class KnowledgePortal(CustomerPortal):
         children = Article.search(
             self._kb_nav_domain(audience_domain, [('parent_id', '=', article.id)]), order=NAV_ORDER)
         return request.render('eurekam_knowledge_portal.portal_kb_article', self._kb_values(
+            ui_lang,
             root=root,
             article=article,
             body=render_portal_body(article.body),
