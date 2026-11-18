@@ -134,17 +134,31 @@ vérifie `test_portal_cannot_see_other_members`.
 
 ## Recette (spec §8)
 
-Compte de test : utilisateur portail dédié (ex. `kb-test@eurekam.fr`).
+Compte de test sur la sandbox : `kb-test@eurekam.fr` (utilisateur portail n°850, mot de passe dans
+`config/kb_test_account.local.json`, ignoré par git). Recette du 2026-11-18, version 18.0.1.0.2.
 
 | # | Test | Résultat attendu | Résultat sandbox |
 |---|---|---|---|
-| 1 | `/my` puis `/my/kb` | Carte KB visible, arborescence de niveau 1 affichée | _à faire_ |
-| 2 | Ouvrir articles niveaux 1, 2, 3 + liens internes | Navigation OK, fil d'Ariane correct | _à faire_ |
-| 3 | `/my/kb/article/21` | 404 | _à faire_ |
-| 4 | `/knowledge/article/21` (portail) | 404 / redirection | _à faire_ |
-| 5 | Aucune page ne montre d'autres utilisateurs portail | Aucun nom | _à faire_ |
-| 6 | Interne (Gillian) édite via `/odoo/knowledge` | Inchangé | _à faire_ |
+| 1 | `/my` puis `/my/kb` | Carte KB visible, arborescence de niveau 1 affichée | ✅ carte affichée, 9 rubriques |
+| 2 | Ouvrir des articles + liens internes | Navigation OK, fil d'Ariane correct | ✅ (vérifié au niveau 1 ; niveaux 2-3 à confirmer par l'équipe) |
+| 3 | `/my/kb/article/21` | 404 | ✅ 404 |
+| 4 | `/knowledge/article/21` (portail) | 404 / redirection | ✅ redirigé vers `/my/kb/article/21`, 404 |
+| 5 | Aucune page ne montre d'autres utilisateurs | Aucun nom | ✅ ; par RPC le compte ne voit que lui-même, aucun membre d'article |
+| 6 | Interne édite via `/odoo/knowledge` | Inchangé | ✅ `/knowledge/article/19` en admin → `/odoo/knowledge/19` (après correctif 18.0.1.0.1) |
 | 7 | Désinstallation du module | Aucun article public | _à faire_ |
-| + | Déconnecté : `/knowledge/article/19` | Redirection login, en-tête `X-Robots-Tag` | _à faire_ |
-| + | Images dans un article (portail) | Affichées (sinon : règle `ir.attachment`, spec §6.3) | _à faire_ |
-| + | Tenter de republier un article de l'arbre | `UserError` | _à faire_ |
+| + | Déconnecté : `/knowledge/article/19`, `/my/kb/article/19` | Redirection login | ✅ |
+| + | Images dans un article (portail) | Affichées | ✅ (articles 454, 455, 456) |
+| + | Fichiers intégrés (manuels PDF) | Téléchargeables | ✅ après correctif 18.0.1.0.2 (16 liens sur « Manuels utilisateur ») |
+| + | Lien KB sur `/my/tickets` | Bouton présent | ✅ |
+| + | Republier un article de l'arbre | `UserError` | _à faire_ |
+| + | Portail Knowledge natif (`/knowledge/home`) | Rien d'exposé | ✅ vide (« Pas encore d'article ») |
+
+Anomalies trouvées pendant la recette, corrigées :
+- 18.0.1.0.1 : `/knowledge/article/<id>` en erreur 500 pour tous (signature de
+  `redirect_to_article` en arguments nommés dans `website_knowledge`).
+- 18.0.1.0.2 : les 41 fichiers intégrés (`data-embedded="file"`) n'étaient rendus que par le
+  JavaScript de Knowledge, donc invisibles côté portail ; la date affichée était celle de
+  l'installation.
+
+Points ouverts : l'article 21 (hors arborescence) est encore publié, donc public ; la carte native
+« Connaissances » de `/my` mène les clients à une page vide.
