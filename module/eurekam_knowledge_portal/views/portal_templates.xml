@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         Centre portail /my : carte « Base de connaissance Eurekam »
+         ============================================================ -->
+    <template id="portal_my_home_kb" name="Base de connaissance Eurekam" inherit_id="portal.portal_my_home" priority="40">
+        <xpath expr="//div[@id='portal_common_category']" position="inside">
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="icon" t-value="'/eurekam_knowledge_portal/static/src/img/knowledge.svg'"/>
+                <t t-set="title">Base de connaissance Eurekam</t>
+                <t t-set="text">Guides, procédures et réponses aux questions fréquentes</t>
+                <t t-set="url" t-value="'/my/kb'"/>
+                <t t-set="placeholder_count" t-value="'knowledge_count'"/>
+            </t>
+        </xpath>
+    </template>
+
+    <!-- ============================================================
+         Fil d'Ariane portail
+         + lien KB sur les pages Helpdesk (/my/ticket*), sans dépendre de helpdesk
+         ============================================================ -->
+    <template id="portal_breadcrumbs_kb" name="Portal Breadcrumbs: KB" inherit_id="portal.portal_breadcrumbs" priority="40">
+        <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
+            <li t-if="page_name == 'kb'" class="breadcrumb-item active">Base de connaissance</li>
+            <t t-if="page_name == 'kb_article'">
+                <li class="breadcrumb-item"><a href="/my/kb">Base de connaissance</a></li>
+                <li t-foreach="ancestors" t-as="ancestor" class="breadcrumb-item">
+                    <a t-attf-href="/my/kb/article/#{ancestor.id}" t-out="ancestor.name"/>
+                </li>
+                <li class="breadcrumb-item active text-truncate" t-out="article.name"/>
+            </t>
+        </xpath>
+        <xpath expr="//ol[hasclass('o_portal_submenu')]" position="after">
+            <a t-if="request and request.httprequest.path.startswith('/my/ticket')"
+               href="/my/kb" class="btn btn-sm btn-light ms-2 text-nowrap o_eurekam_kb_ticket_link">
+                <i class="fa fa-book me-1" role="img" aria-label="Base de connaissance"/>Base de connaissance
+            </a>
+        </xpath>
+    </template>
+
+    <!-- ============================================================
+         Sous-templates
+         ============================================================ -->
+    <template id="kb_article_link_list" name="KB: liste d'articles">
+        <div class="list-group list-group-flush">
+            <a t-foreach="articles" t-as="item"
+               t-attf-href="/my/kb/article/#{item.id}"
+               t-attf-class="list-group-item list-group-item-action d-flex align-items-center gap-2 #{'active' if current and item == current else ''}">
+                <span class="o_kb_icon" t-out="item.icon or '📄'"/>
+                <span class="text-truncate" t-out="item.name"/>
+            </a>
+        </div>
+    </template>
+
+    <!-- ============================================================
+         /my/kb : accueil de la base de connaissance
+         ============================================================ -->
+    <template id="portal_kb_index" name="Base de connaissance Eurekam">
+        <t t-call="portal.portal_layout">
+            <t t-set="title">Base de connaissance Eurekam</t>
+            <div class="o_eurekam_kb mt-3">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span class="fs-2" t-out="root.icon or '📚'"/>
+                    <h2 class="mb-0" t-out="root.name"/>
+                </div>
+                <div t-if="not children" class="alert alert-info">
+                    Aucun article n'est disponible pour le moment.
+                </div>
+                <div t-else="" class="row g-3">
+                    <div t-foreach="children" t-as="child" class="col-12 col-md-6 col-lg-4">
+                        <a t-attf-href="/my/kb/article/#{child.id}"
+                           class="card h-100 text-decoration-none text-reset o_eurekam_kb_card">
+                            <div class="card-body d-flex align-items-start gap-3">
+                                <span class="fs-3 lh-1" t-out="child.icon or '📄'"/>
+                                <div class="flex-grow-1 min-w-0">
+                                    <h5 class="card-title mb-1 text-truncate" t-out="child.name"/>
+                                    <small class="text-muted">
+                                        Mis à jour le <span t-field="child.write_date" t-options="{'widget': 'date'}"/>
+                                    </small>
+                                </div>
+                                <i class="fa fa-chevron-right text-muted align-self-center" title="Ouvrir" aria-hidden="true"/>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============================================================
+         /my/kb/article/<id> : lecture d'un article
+         ============================================================ -->
+    <template id="portal_kb_article" name="Article de la base de connaissance">
+        <t t-call="portal.portal_layout">
+            <t t-set="title" t-value="article.name"/>
+            <div class="o_eurekam_kb row g-4 mt-1">
+                <!-- Navigation latérale -->
+                <aside class="col-12 col-lg-3 order-2 order-lg-1">
+                    <div class="card mb-3">
+                        <div class="card-header fw-bold small text-uppercase">
+                            <a href="/my/kb" class="text-reset text-decoration-none">
+                                <i class="fa fa-book me-1"/>Sommaire
+                            </a>
+                        </div>
+                        <t t-call="eurekam_knowledge_portal.kb_article_link_list">
+                            <t t-set="articles" t-value="siblings"/>
+                            <t t-set="current" t-value="article"/>
+                        </t>
+                    </div>
+                </aside>
+                <!-- Contenu -->
+                <main class="col-12 col-lg-9 order-1 order-lg-2">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="fs-2 lh-1" t-out="article.icon or '📄'"/>
+                                <h1 class="h2 mb-0" t-out="article.name"/>
+                            </div>
+                            <small class="text-muted d-block mb-4">
+                                Mis à jour le <span t-field="article.write_date" t-options="{'widget': 'date'}"/>
+                            </small>
+                            <div class="o_eurekam_kb_body" t-out="article.body"/>
+                        </div>
+                    </div>
+                    <div t-if="children" class="card mt-3">
+                        <div class="card-header fw-bold">Dans cette section</div>
+                        <t t-call="eurekam_knowledge_portal.kb_article_link_list">
+                            <t t-set="articles" t-value="children"/>
+                            <t t-set="current" t-value="False"/>
+                        </t>
+                    </div>
+                    <div class="mt-3">
+                        <a t-if="ancestors" t-attf-href="/my/kb/article/#{ancestors[-1].id}" class="btn btn-light">
+                            <i class="fa fa-arrow-left me-1"/>Retour à « <t t-out="ancestors[-1].name"/> »
+                        </a>
+                        <a t-else="" href="/my/kb" class="btn btn-light">
+                            <i class="fa fa-arrow-left me-1"/>Retour au sommaire
+                        </a>
+                    </div>
+                </main>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============================================================
+         Fallback : racine non configurée (fail-safe, aucun article exposé)
+         ============================================================ -->
+    <template id="portal_no_kb" name="Base de connaissance indisponible">
+        <t t-call="portal.portal_layout">
+            <t t-set="title">Base de connaissance Eurekam</t>
+            <div class="alert alert-warning mt-3" role="alert">
+                <h4 class="alert-heading"><i class="fa fa-book me-1"/>Base de connaissance indisponible</h4>
+                <p class="mb-0">
+                    La base de connaissance n'est pas encore accessible depuis votre espace client.
+                    Merci de contacter le Service Client Eurekam si le problème persiste.
+                </p>
+            </div>
+        </t>
+    </template>
+
+</odoo>

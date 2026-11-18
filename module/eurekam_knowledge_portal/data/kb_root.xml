@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!--
+        Id de l'article racine partagé avec le portail. Valeur par défaut = prod (19).
+        À vérifier / ajuster par base dans Paramètres → Technique → Paramètres système.
+        noupdate : une mise à jour du module n'écrase pas la valeur réglée par un admin.
+    -->
+    <record id="kb_root_param" model="ir.config_parameter">
+        <field name="key">eurekam_knowledge_portal.root_article_id</field>
+        <field name="value">19</field>
+    </record>
+</odoo>

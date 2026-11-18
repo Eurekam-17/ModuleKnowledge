@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Lecture, pour le groupe portail, de l'article racine Eurekam et de toute sa descendance.
+        `eurekam_kb_root_id` est injecté dans le contexte d'évaluation des règles par
+        models/ir_rule.py (le contexte natif ne contient pas `env`). Vaut 0 si le paramètre
+        n'est pas configuré : `child_of 0` ne renvoie rien (fail-safe).
+        Pas de noupdate : une mise à jour du module doit corriger la règle si besoin.
+    -->
+    <record id="knowledge_article_portal_rule" model="ir.rule">
+        <field name="name">Portal users : lecture des descendants de l'article racine Eurekam</field>
+        <field name="model_id" ref="knowledge.model_knowledge_article"/>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="domain_force">[('id', 'child_of', eurekam_kb_root_id)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+</odoo>
