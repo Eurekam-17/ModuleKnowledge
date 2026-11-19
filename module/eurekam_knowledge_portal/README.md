@@ -64,6 +64,27 @@ historique. Les pages n'affichent que titre, émoji, date de mise à jour et con
   Rappel : dans ce mode natif, chaque membre voit la liste des autres membres (choix assumé par
   l'équipe pour ces deux bases).
 
+## Fichiers et images : jetons d'accès
+
+Un lien `/web/content/<id>?access_token=…` (ou `/web/image/…?access_token=…`) donne le fichier à
+**quiconque possède le lien**, connecté ou non, que l'article soit publié ou pas. Quand la base
+était publique, Google a indexé ces liens (ex. `support.eurekam.fr/web/content/54443?access_token=…`).
+
+Le module renouvelle donc les jetons des pièces jointes citées dans la base 19
+(`_eurekam_kb_rotate_attachment_tokens`) : à l'installation, et une fois par la migration
+18.0.1.0.7. Les anciens jetons sont remplacés par les nouveaux dans le corps de **tous** les
+articles qui les citent (mise à jour SQL : ni date « Mis à jour le » ni version d'historique
+modifiées) ; les pièces jointes d'articles marquées `public` repassent en privé. Les anciens liens
+répondent alors par un refus ; les articles continuent de fonctionner.
+
+À faire en parallèle : Google Search Console, propriété `support.eurekam.fr`, *Suppressions →
+Nouvelle demande → Supprimer toutes les URL avec ce préfixe* :
+`https://support.eurekam.fr/web/content/`. L'en-tête `X-Robots-Tag: noindex` est ajouté aux
+adresses `/web/content` et `/web/image` pour éviter toute réindexation.
+
+Pour relancer le renouvellement (ex. si un fichier a de nouveau été diffusé) : shell Odoo,
+`env['knowledge.article']._eurekam_kb_rotate_attachment_tokens(); env.cr.commit()`.
+
 ## Configuration après installation
 
 Paramètre système **`eurekam_knowledge_portal.root_article_id`** = id de l'article racine

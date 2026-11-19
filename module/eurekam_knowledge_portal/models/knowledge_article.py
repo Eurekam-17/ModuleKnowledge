@@ -1,10 +1,29 @@
 # -*- coding: utf-8 -*-
+import html
 import logging
+import re
+import uuid
 
 from odoo import _, api, models
 from odoo.exceptions import UserError
+from odoo.tools import split_every
 
 _logger = logging.getLogger(__name__)
+
+# Pièces jointes citées dans un corps d'article : liens /web/content/<id>, images
+# /web/image/<id>[-<checksum>], et blocs « fichier » embarqués ({"fileData": {..., "id": <id>}}).
+ATTACHMENT_URL_RE = re.compile(r'/web/(?:content|image)/(\d+)(?=[-/?"\'&#]|$)')
+EMBEDDED_FILE_RE = re.compile(r'"fileData"\s*:\s*\{[^{}]*?"id"\s*:\s*(\d+)')
+
+
+def referenced_attachment_ids(body):
+    """Ids des pièces jointes référencées dans un corps HTML d'article."""
+    if not body:
+        return set()
+    text = html.unescape(str(body))
+    ids = {int(i) for i in ATTACHMENT_URL_RE.findall(text)}
+    ids |= {int(i) for i in EMBEDDED_FILE_RE.findall(text)}
+    return ids
 
 ROOT_PARAM = 'eurekam_knowledge_portal.root_article_id'
 # Rubriques par langue, sous la racine : « en:463, de:520, it:530 ». Le français est la base
@@ -137,6 +156,68 @@ class KnowledgeArticle(models.Model):
         if articles:
             articles.write({'is_published': False})
             _logger.info("eurekam_knowledge_portal: %s article(s) dépublié(s).", len(articles))
+
+    @api.model
+    def _eurekam_kb_rotate_attachment_tokens(self):
+        """Renouvelle les jetons d'accès des pièces jointes citées dans la base partagée.
+
+        Un lien ``/web/content/<id>?access_token=…`` donne le fichier à quiconque le possède,
+        connecté ou non : les liens indexés par Google quand les articles étaient publics
+        restent valables après la dépublication. On génère un nouveau jeton pour chaque
+        pièce jointe citée dans la base, puis on remplace l'ancien dans le corps de **tous**
+        les articles (une même pièce jointe peut être citée ailleurs) : les anciens liens
+        tombent, les articles continuent de fonctionner.
+
+        Corps mis à jour en SQL : une écriture ORM du corps changerait la date « Mis à jour
+        le » et ajouterait une version à l'historique pour un simple remplacement de jeton.
+        Les pièces jointes d'articles marquées ``public`` (lisibles sans jeton) sont
+        repassées en privé. Sudo : opération de maintenance (installation / migration).
+        """
+        if not self._eurekam_kb_root_id():
+            return {}
+        cr = self.env.cr
+        Article = self.sudo().with_context(active_test=False)
+        tree_ids = Article.search(self._eurekam_kb_domain()).ids
+        attachment_ids = set()
+        for chunk in split_every(20, tree_ids):
+            cr.execute("SELECT body FROM knowledge_article WHERE id IN %s", [tuple(chunk)])
+            for (body,) in cr.fetchall():
+                attachment_ids |= referenced_attachment_ids(body)
+
+        attachments = self.env['ir.attachment'].sudo().browse(sorted(attachment_ids)).exists()
+        replacements = {}
+        for attachment in attachments:
+            if attachment.access_token:
+                new_token = str(uuid.uuid4())
+                replacements[attachment.access_token] = new_token
+                attachment.write({'access_token': new_token})
+        made_private = attachments.filtered(
+            lambda a: a.public and a.res_model == 'knowledge.article')
+        made_private.write({'public': False})
+
+        updated_articles = 0
+        if replacements:
+            pattern = re.compile('|'.join(re.escape(token) for token in replacements))
+            cr.execute("SELECT id FROM knowledge_article WHERE body IS NOT NULL ORDER BY id")
+            all_ids = [row[0] for row in cr.fetchall()]
+            for chunk in split_every(20, all_ids):
+                cr.execute("SELECT id, body FROM knowledge_article WHERE id IN %s", [tuple(chunk)])
+                for article_id, body in cr.fetchall():
+                    new_body = pattern.sub(lambda match: replacements[match.group(0)], body)
+                    if new_body != body:
+                        cr.execute("UPDATE knowledge_article SET body = %s WHERE id = %s",
+                                   [new_body, article_id])
+                        updated_articles += 1
+            self.env['knowledge.article'].invalidate_model(['body'])
+
+        result = {
+            'attachments': len(attachments),
+            'tokens_renewed': len(replacements),
+            'made_private': len(made_private),
+            'articles_updated': updated_articles,
+        }
+        _logger.info("eurekam_knowledge_portal: renouvellement des jetons %s", result)
+        return result
 
     @api.model
     def _eurekam_kb_check_no_helpdesk_team(self):

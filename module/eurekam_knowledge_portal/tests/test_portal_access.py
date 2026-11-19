@@ -117,6 +117,40 @@ class TestKbPortalAccess(KbPortalCommon, TransactionCase):
 
 
 @tagged('post_install', '-at_install')
+class TestKbTokenRotation(KbPortalCommon, TransactionCase):
+    """Les liens de fichiers diffusés quand la base était publique doivent tomber."""
+
+    def test_tokens_renewed_and_bodies_updated(self):
+        Attachment = self.env['ir.attachment']
+        pdf = Attachment.create({'name': 'manuel.pdf', 'raw': b'%PDF-1.4 test',
+                                 'res_model': 'knowledge.article', 'res_id': self.child.id,
+                                 'public': True})
+        img = Attachment.create({'name': 'image.png', 'raw': b'png',
+                                 'res_model': 'knowledge.article', 'res_id': self.child.id})
+        old_pdf, old_img = pdf.generate_access_token()[0], img.generate_access_token()[0]
+        self.child.body = (
+            f'<p><span data-embedded="file" data-embedded-props=\'{{"fileData": {{"access_token": '
+            f'"{old_pdf}", "id": {pdf.id}, "name": "manuel.pdf"}}}}\'></span>'
+            f'<img src="/web/image/{img.id}-abc/image.png?access_token={old_img}"></p>')
+        # Même image citée dans un article hors de la base : son lien doit suivre
+        self.outside.body = f'<p><img src="/web/image/{img.id}?access_token={old_img}"></p>'
+        last_edition = self.child.last_edition_date
+
+        result = self.env['knowledge.article']._eurekam_kb_rotate_attachment_tokens()
+
+        self.assertEqual(result['tokens_renewed'], 2)
+        self.assertNotEqual(pdf.access_token, old_pdf)
+        self.assertNotEqual(img.access_token, old_img)
+        self.assertFalse(pdf.public)
+        self.assertIn(pdf.access_token, self.child.body)
+        self.assertIn(img.access_token, self.child.body)
+        self.assertNotIn(old_pdf, self.child.body)
+        self.assertIn(img.access_token, self.outside.body)
+        self.assertNotIn(old_img, self.outside.body)
+        self.assertEqual(self.child.last_edition_date, last_edition)
+
+
+@tagged('post_install', '-at_install')
 class TestKbLangRoots(TransactionCase):
 
     def test_parse_lang_roots(self):
