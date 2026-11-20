@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Manuel utilisateur — Base de connaissance portail</title>
+<link rel="stylesheet" href="eurekam-doc.css">
+<style>
+  @page { @bottom-left { content: "EUREKAM · MANUEL UTILISATEUR · BASE DE CONNAISSANCE PORTAIL"; } }
+</style>
+</head>
+<body>
+
+<!-- ============================== COUVERTURE ============================== -->
+<section class="cover">
+  <img class="logo" src="img/logo-eurekam.png" alt="Eurekam Technologies">
+  <div class="eyebrow">Manuel utilisateur · Odoo 18</div>
+  <h1>Base de connaissance <em>portail</em></h1>
+  <p class="subtitle">Partager la base de connaissance Eurekam avec nos clients connectés, sans la
+    rendre publique : ce que voit le client, comment rédiger, comment administrer.</p>
+  <div class="meta">
+    <div>Module<b>eurekam_knowledge_portal</b></div>
+    <div>Version<b>18.0.1.1.0</b></div>
+    <div>Date<b>20 novembre 2026</b></div>
+    <div>Public<b>Équipe Eurekam</b></div>
+  </div>
+</section>
+
+<!-- ============================== SOMMAIRE ============================== -->
+<section class="toc">
+  <div class="eyebrow">Sommaire</div>
+  <h2>Ce dont nous allons <em>parler.</em></h2>
+  <ol>
+    <li><div><b>Le module en bref</b><span>Pourquoi il existe, ce qu'il change</span></div></li>
+    <li><div><b>Ce que voit le client</b><span>Accès, navigation, manuels, langues, tickets</span></div></li>
+    <li><div><b>Rédiger et organiser la base</b><span>Où placer les articles, fichiers, liens, publication</span></div></li>
+    <li><div><b>Donner accès à un client</b><span>Compte portail, langue, invitation</span></div></li>
+    <li><div><b>Administrer le module</b><span>Paramètres, langues, sécurité des fichiers</span></div></li>
+    <li><div><b>Questions fréquentes</b><span>Dépannage et aide-mémoire</span></div></li>
+  </ol>
+</section>
+
+<!-- ============================== 01 ============================== -->
+<section class="chapter">
+  <span class="eyebrow">Chapitre 01</span>
+  <h2>Le module <em>en bref.</em></h2>
+  <p class="lead">La base de connaissance Eurekam (manuels, journaux de changement, listes de seringues
+    et de flacons, FAQ) est désormais réservée à nos clients <b>connectés</b> à leur espace client.</p>
+
+  <h3>Avant / après</h3>
+  <table>
+    <tr><th></th><th>Avant</th><th>Avec le module</th></tr>
+    <tr><td>Accès client</td><td>Articles publiés sur le site : lisibles par tous, indexés par Google</td>
+        <td>Lecture réservée aux clients connectés, sur <span class="path">/my/kb</span></td></tr>
+    <tr><td>Confidentialité</td><td>Partage article par article impossible sans montrer la liste des autres clients (RGPD)</td>
+        <td>Aucun client ne voit les autres clients ni leurs noms</td></tr>
+    <tr><td>Rédaction</td><td>Dans l'application Connaissances</td><td><b>Inchangée</b> : toujours dans Connaissances</td></tr>
+    <tr><td>Langues</td><td>Une seule base pour tous</td><td>Base française pour les comptes en français, rubrique de leur langue (ou anglaise) pour les autres</td></tr>
+    <tr><td>Fichiers</td><td>Liens de fichiers trouvables sur Google</td><td>Liens renouvelés, plus indexés</td></tr>
+  </table>
+
+  <h3>Ce qu'il faut retenir</h3>
+  <ul>
+    <li>La base partagée est l'article <b>« Base de connaissance »</b> et <b>tout ce qui se trouve dessous</b>.</li>
+    <li>On n'y <b>publie plus rien sur le site</b> : Odoo le refuse, c'est voulu.</li>
+    <li>Les bases partagées <b>nominativement</b> (McKesson, IT HEALTH) fonctionnent comme avant.</li>
+    <li>Le réglage se fait dans <b>Paramètres → Base de connaissance portail</b>, réservé aux administrateurs.</li>
+  </ul>
+</section>
+
+<!-- ============================== 02 ============================== -->
+<section class="chapter">
+  <span class="eyebrow">Chapitre 02</span>
+  <h2>Ce que voit <em>le client.</em></h2>
+  <p class="lead">Le client se connecte avec son compte portail sur le site d'assistance Eurekam, puis
+    ouvre son espace client.</p>
+
+  <h3>1. La carte « Base de connaissance Eurekam »</h3>
+  <p>Sur sa page <b>Mon compte</b> (<span class="path">/my</span>), une carte mène à la base de connaissance.</p>
+  <figure>
+    <img src="img/01-mon-compte.png" alt="Page Mon compte avec la carte Base de connaissance Eurekam">
+    <figcaption><b>FIG. 01</b> · Mon compte : la carte « Base de connaissance Eurekam »</figcaption>
+  </figure>
+
+  <h3>2. L'accueil de la base</h3>
+  <p>Les rubriques de premier niveau s'affichent en cartes, avec leur date de dernière mise à jour.</p>
+  <figure>
+    <img src="img/02-accueil-base.png" alt="Accueil de la base de connaissance">
+    <figcaption><b>FIG. 02</b> · /my/kb : les rubriques de la base, pour un compte en français</figcaption>
+  </figure>
+
+  <h3>3. Lire un article et télécharger les manuels</h3>
+  <p>Chaque article affiche à gauche le <b>sommaire</b> de sa rubrique et en haut le <b>fil d'Ariane</b>.
+    Les fichiers intégrés aux articles (manuels PDF, listes…) apparaissent comme des
+    <b>boutons de téléchargement</b>.</p>
+  <figure>
+    <img src="img/03-article-manuels.png" alt="Article Manuels utilisateur avec boutons de téléchargement">
+    <figcaption><b>FIG. 03</b> · Article « Manuels utilisateur » : un clic télécharge le PDF</figcaption>
+  </figure>
+
+  <h3>4. Naviguer dans les sous-articles</h3>
+  <figure>
+    <img src="img/04-article-niveau2.png" alt="Article de second niveau avec fil d'Ariane">
+    <figcaption><b>FIG. 04</b> · Fil d'Ariane : Base de connaissance / Apprentissage / article</figcaption>
+  </figure>
+  <p>En bas d'une rubrique, la liste <b>« Dans cette section »</b> donne accès à ses sous-articles.</p>
+  <figure>
+    <img src="img/05-dans-cette-section.png" alt="Liste Dans cette section">
+    <figcaption><b>FIG. 05</b> · « Dans cette section » : les sous-articles de la rubrique</figcaption>
+  </figure>
+
+  <h3>5. Depuis ses tickets d'assistance</h3>
+  <p>Sur la liste de ses tickets (<span class="path">/my/tickets</span>), un bouton
+    <b>Base de connaissance</b> ramène à la base.</p>
+  <figure class="half">
+    <img src="img/06-bouton-tickets.png" alt="Bouton Base de connaissance sur la page des tickets">
+    <figcaption><b>FIG. 06</b> · Le bouton « Base de connaissance » à côté du fil d'Ariane des tickets</figcaption>
+  </figure>
+
+  <h3>6. Selon la langue du compte</h3>
+  <table>
+    <tr><th>Langue du compte client</th><th>Ce qu'il voit</th><th>Interface</th></tr>
+    <tr><td>Français</td><td>Toute la base, <b>sauf</b> les rubriques de langue ([EN]…)</td><td>Français</td></tr>
+    <tr><td>Anglais</td><td>Uniquement la rubrique <b>[EN] - Knowledge database</b></td><td>Anglais</td></tr>
+    <tr><td>Langue ayant sa rubrique (ex. allemand)</td><td>Uniquement sa rubrique</td><td>Sa langue</td></tr>
+    <tr><td>Toute autre langue</td><td>La rubrique anglaise (langue de repli)</td><td>Anglais</td></tr>
+  </table>
+  <figure>
+    <img src="img/09-accueil-anglais.png" alt="Accueil de la base pour un compte en anglais">
+    <figcaption><b>FIG. 07</b> · Le même accueil pour un compte en anglais</figcaption>
+  </figure>
+
+  <div class="note"><b>Ce que le client ne voit jamais</b>
+    Les autres clients, les auteurs des articles, l'historique, les articles hors de la base partagée.
+    Un article d'une autre langue ou hors base répond « page introuvable ».</div>
+  <div class="note"><b>Clients McKesson et IT HEALTH</b>
+    Ils gardent en plus la carte native <b>« Connaissances »</b>, qui donne accès à leur base partagée
+    nominativement. Les autres clients ne voient pas cette carte.</div>
+</section>
+
+<!-- ============================== 03 ============================== -->
+<section class="chapter">
+  <span class="eyebrow">Chapitre 03</span>
+  <h2>Rédiger et organiser <em>la base.</em></h2>
+  <p class="lead">On écrit toujours dans l'application <b>Connaissances</b>, avec l'éditeur habituel.
+    Seules quelques règles de rangement comptent.</p>
+
+  <h3>Où placer un article</h3>
+  <ul>
+    <li>Pour qu'un client le voie : <b>sous « Base de connaissance »</b>, à n'importe quel niveau.</li>
+    <li>Un article placé ailleurs (racine, espace privé, « Projets internes »…) reste <b>invisible</b> pour les clients.</li>
+    <li>Les rubriques de langue (<b>[EN] - Knowledge database</b>, et demain [DE]…) doivent rester
+      <b>sous « Base de connaissance »</b>. Sorties de la base, leurs articles deviennent inaccessibles aux clients.</li>
+  </ul>
+  <div class="warn"><b>À éviter</b>
+    Déplacer une rubrique de langue à la racine de Connaissances : les clients anglophones ne la voient
+    plus, et le tri par langue se désactive sans prévenir. Pour revenir en arrière, il suffit de la replacer
+    sous « Base de connaissance ».</div>
+
+  <h3>Ne plus publier sur le site</h3>
+  <p>Publier sur le site un article de la base est refusé (<i>« … ne peuvent pas être publiés sur le site
+    web »</i>), y compris en déplaçant dans la base un article déjà publié : c'est le garde-fou qui empêche
+    la base de redevenir publique.</p>
+
+  <h3>Fichiers et images</h3>
+  <ul>
+    <li>Un fichier inséré avec la commande <span class="mono">/fichier</span> apparaît côté client comme un
+      bouton de téléchargement (FIG. 03) ; les images s'affichent normalement.</li>
+    <li>Les <b>listes d'articles intégrées</b> ne s'affichent pas côté client : la page liste déjà les sous-articles.</li>
+  </ul>
+
+  <h3>Liens entre articles</h3>
+  <ul>
+    <li>Créer un lien avec la commande <span class="mono">/article</span> ou l'outil lien en choisissant
+      l'article : côté client, le lien ouvre l'article dans son espace.</li>
+    <li>Ne pas coller d'adresse du type <span class="mono">/web#id=…</span>,
+      <span class="mono">https://eurekam.odoo.com/…</span> ou de l'ancien
+      <span class="mono">support.eurekam.fr/#knowledge_base/…</span> : ces liens ne fonctionnent pas
+      pour un client. La liste des liens à corriger est dans
+      <span class="path">docs/liens-casses-base-connaissance.md</span>.</li>
+  </ul>
+
+  <h3>Bases partagées nominativement</h3>
+  <p>« Mc Kesson Knowledge base » et « IT HEALTH Knowledge base » restent hors de la base partagée et
+    gardent leur fonctionnement : on y ajoute les membres (collaborateurs, contacts clients) depuis le bouton
+    <b>Partager</b> de Connaissances. Rappel : dans ce mode, chaque membre voit la liste des autres membres.</p>
+</section>
+
+<!-- ============================== 04 ============================== -->
+<section class="chapter">
+  <span class="eyebrow">Chapitre 04</span>
+  <h2>Donner accès <em>à un client.</em></h2>
+  <p class="lead">Un client lit la base dès qu'il dispose d'un compte portail. Aucun réglage
+    supplémentaire n'est nécessaire.</p>
+
+  <ol class="steps">
+    <li><b>Ouvrir la fiche du contact</b> (application Contacts), rattachée à son établissement.</li>
+    <li>Vérifier le champ <b>Langue</b> : il décide de la partie de la base que verra le client
+      (français, ou rubrique de sa langue, ou anglais).</li>
+    <li><b>Action → Accorder l'accès portail</b>, puis cocher le contact et valider : Odoo envoie
+      l'invitation par e-mail.</li>
+    <li>Le client crée son mot de passe, se connecte, puis ouvre la carte « Base de connaissance Eurekam »
+      depuis <b>Mon compte</b>.</li>
+  </ol>
+
+  <div class="tip"><b>Message type au client</b>
+    « Notre base de connaissance (manuels, journaux de changement, FAQ) est disponible dans votre espace
+    client : connectez-vous sur le site d'assistance Eurekam, puis ouvrez <b>Mon compte → Base de
+    connaissance Eurekam</b>. »</div>
+
+  <h3>Changer la langue d'un client</h3>
+  <p>Modifier le champ <b>Langue</b> de sa fiche contact. Le changement s'applique à sa prochaine page.</p>
+
+  <h3>Retirer l'accès</h3>
+  <p><b>Action → Accorder l'accès portail</b>, puis <b>Révoquer l'accès</b> sur la ligne du contact.
+    Le client ne peut plus se connecter.</p>
+</section>
+
+<!-- ============================== 05 ============================== -->
+<section class="chapter">
+  <span class="eyebrow">Chapitre 05</span>
+  <h2>Administrer <em>le module.</em></h2>
+  <p class="lead">Tout se règle dans <b>Paramètres → Base de connaissance portail</b>
+    (administrateurs Odoo, sans mode développeur).</p>
+
+  <figure>
+    <img src="img/07-parametres-base.png" alt="Paramètres : base partagée et bases par langue">
+    <figcaption><b>FIG. 08</b> · Paramètres : article racine et rubriques par langue</figcaption>
+  </figure>
+
+  <h3>Base partagée avec les clients</h3>
+  <ul>
+    <li><b>Article racine</b> : « Base de connaissance ». Lui et toute sa descendance sont partagés.
+      Le nombre d'articles partagés s'affiche dessous.</li>
+    <li>Changer d'article racine dépublie la nouvelle base et renouvelle les liens de ses fichiers.
+      Refusé tant qu'une équipe d'assistance affiche cet article sur le site public.</li>
+    <li>Vider le champ : <b>plus aucun article n'est exposé</b> (les clients voient « Base de connaissance
+      indisponible »).</li>
+  </ul>
+
+  <h3>Bases par langue</h3>
+  <p>Pour chaque langue (anglais, allemand, italien, espagnol), choisir la rubrique correspondante parmi les
+    sous-articles de la base. Laisser vide si la langue n'a pas de rubrique : ses clients verront l'anglais.</p>
+  <ol class="steps">
+    <li>Dans Connaissances, créer la rubrique sous « Base de connaissance », par ex.
+      « [DE] - Wissensdatenbank », et y placer les articles traduits.</li>
+    <li>Activer la langue si besoin : <b>Paramètres → Langues</b>.</li>
+    <li>Dans <b>Paramètres → Base de connaissance portail</b>, choisir la rubrique dans le champ de la langue, puis <b>Sauver</b>.</li>
+    <li>Mettre les clients concernés dans cette langue (chapitre 04).</li>
+  </ol>
+  <div class="note"><b>Autre langue que celles proposées</b>
+    (néerlandais…) : la déclarer en mode développeur dans le paramètre système
+    <span class="mono">eurekam_knowledge_portal.lang_root_articles</span>, par ex.
+    <span class="mono">en:463, nl:540</span>. Elle apparaît sous « Autres langues » ; l'interface du
+    client sera en anglais tant que ses libellés ne sont pas ajoutés au module.</div>
+
+  <h3>Sécurité des fichiers</h3>
+  <figure>
+    <img src="img/08-parametres-securite.png" alt="Paramètres : sécurité des fichiers">
+    <figcaption><b>FIG. 09</b> · Le bouton « Renouveler les jetons des fichiers »</figcaption>
+  </figure>
+  <p>Les fichiers et images des articles s'ouvrent grâce à un code (jeton) contenu dans leur lien. Si des
+    liens ont circulé (moteur de recherche, e-mail transféré…), <b>Renouveler les jetons des fichiers</b>
+    rend tous les anciens liens inutilisables. Les articles continuent de fonctionner ; un client qui avait
+    enregistré un lien direct devra repasser par la base.</p>
+</section>
+
+<!-- ============================== 06 ============================== -->
+<section class="chapter">
+  <span class="eyebrow">Chapitre 06</span>
+  <h2>Questions <em>fréquentes.</em></h2>
+
+  <table>
+    <tr><th style="width:38%">Situation</th><th>Explication et solution</th></tr>
+    <tr><td>Un client ne voit pas un article</td>
+        <td>L'article n'est pas sous « Base de connaissance », ou il est dans une rubrique d'une autre langue
+          que celle du client. Le déplacer, ou vérifier la langue de la fiche du client.</td></tr>
+    <tr><td>Un client anglophone voit la base française</td>
+        <td>La rubrique [EN] n'est plus sous « Base de connaissance », ou le champ Anglais des paramètres est vide.</td></tr>
+    <tr><td>« Page introuvable » sur un lien</td>
+        <td>Le lien vise un article hors de la base ou d'une autre langue, ou un ancien format d'adresse.
+          Refaire le lien avec <span class="mono">/article</span>.</td></tr>
+    <tr><td>Une image ne s'affiche pas</td>
+        <td>Image provenant de l'ancien outil de support (<span class="mono">support.eurekam.fr/api/…</span>) :
+          la réinsérer dans l'article depuis le fichier d'origine.</td></tr>
+    <tr><td>« Ne peuvent pas être publiés sur le site web »</td>
+        <td>Comportement voulu : la base n'est plus publique. Aucune action à faire.</td></tr>
+    <tr><td>Le client ne trouve pas la carte</td>
+        <td>Il n'est pas connecté, ou son compte n'a pas l'accès portail (chapitre 04).</td></tr>
+    <tr><td>Un ancien lien de fichier envoyé par e-mail ne marche plus</td>
+        <td>Les jetons ont été renouvelés : renvoyer le client vers l'article dans la base.</td></tr>
+    <tr><td>Un membre McKesson n'accède plus à sa base</td>
+        <td>Vérifier qu'il est toujours membre de « Mc Kesson Knowledge base » (bouton Partager) ; il y accède
+          par la carte « Connaissances ».</td></tr>
+  </table>
+
+  <h3>Aide-mémoire</h3>
+  <dl class="kv">
+    <dt>Base client</dt><dd><span class="path">/my/kb</span> · carte « Base de connaissance Eurekam » sur <span class="path">/my</span></dd>
+    <dt>Rédiger</dt><dd>Application Connaissances, sous « Base de connaissance »</dd>
+    <dt>Paramétrer</dt><dd>Paramètres → Base de connaissance portail</dd>
+    <dt>Donner accès</dt><dd>Contacts → Action → Accorder l'accès portail</dd>
+    <dt>Langue client</dt><dd>Fiche contact → champ Langue</dd>
+    <dt>Support du module</dt><dd>Loïc TAMARELLE · dépôt <span class="mono">Eurekam-17/ModuleKnowledge</span></dd>
+  </dl>
+</section>
+
+</body>
+</html>

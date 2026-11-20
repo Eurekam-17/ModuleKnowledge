@@ -53,6 +53,14 @@ mentionnent aussi `support.eurekam.fr` : à relire.
 Sans gravité pour les clients (l'article 19 n'est pas affiché tel quel dans le portail), mais ces
 liens envoient vers la production depuis la sandbox et Recette.
 
+## 4. Images de l'ancien outil de support
+
+Des images pointent vers `https://support.eurekam.fr/api/v1/attachments/<n>` (ancien outil, qui
+n'existe plus) et s'affichent cassées. Exemple relevé le 2026-11-20 : article **130** « Comment faire
+une vidéo d'apprentissage de flacon ? » (icône de l'application, attachment 84301). À réinsérer depuis
+le fichier d'origine. Les autres occurrences sont à rechercher dans Connaissances (corps contenant
+`support.eurekam.fr/api`).
+
 ## Non concernés
 
 Les 60 liens internes au format `/knowledge/article/<id>` fonctionnent.

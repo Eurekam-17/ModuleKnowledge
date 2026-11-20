@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Spécifications techniques — Base de connaissance portail</title>
+<link rel="stylesheet" href="eurekam-doc.css">
+<style>
+  @page { @bottom-left { content: "EUREKAM · SPÉCIFICATIONS TECHNIQUES · EUREKAM_KNOWLEDGE_PORTAL"; } }
+  td code, td .mono { white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<!-- ============================== COUVERTURE ============================== -->
+<section class="cover">
+  <img class="logo" src="img/logo-eurekam.png" alt="Eurekam Technologies">
+  <div class="eyebrow">Spécifications techniques · Odoo 18 Enterprise</div>
+  <h1>eurekam_<br><em>knowledge_portal</em></h1>
+  <p class="subtitle">Accès en lecture des utilisateurs portail à la base de connaissance Knowledge,
+    sans publication publique ni exposition des autres clients.</p>
+  <div class="meta">
+    <div>Version<b>18.0.1.1.0</b></div>
+    <div>Dépôt<b>Eurekam-17/ModuleKnowledge</b></div>
+    <div>Date<b>20 novembre 2026</b></div>
+    <div>Auteur<b>Eurekam</b></div>
+  </div>
+</section>
+
+<!-- ============================== SOMMAIRE ============================== -->
+<section class="toc">
+  <div class="eyebrow">Sommaire</div>
+  <h2>Contenu du <em>document.</em></h2>
+  <ol>
+    <li><div><b>Contexte et exigences</b><span>Problème, règles non négociables, périmètre</span></div></li>
+    <li><div><b>Architecture</b><span>Dépendances, fichiers, paramètres</span></div></li>
+    <li><div><b>Sécurité et droits d'accès</b><span>ACL, règle portail, routage, publication, jetons</span></div></li>
+    <li><div><b>Portail client</b><span>Routes, rendu des articles, langues, cartes /my</span></div></li>
+    <li><div><b>Paramétrage, installation et migrations</b><span>Écran Paramètres, hooks, migrations</span></div></li>
+    <li><div><b>Tests, déploiement et exploitation</b><span>Tests, procédure Odoo.sh, recette, limites, historique</span></div></li>
+  </ol>
+</section>
+
+<!-- ============================== 01 ============================== -->
+<section class="chapter">
+  <span class="eyebrow">Chapitre 01</span>
+  <h2>Contexte et <em>exigences.</em></h2>
+  <p class="lead">Eurekam maintient dans Knowledge une base de connaissance destinée à ses clients
+    hospitaliers. Elle était partagée via <code>website_published</code> : articles publics et indexés par
+    Google. Le partage natif article par article expose à chaque client la liste des autres partenaires
+    (contraire au RGPD).</p>
+
+  <h3>Objectif</h3>
+  <p>Donner aux utilisateurs portail (<code>base.group_portal</code>) la lecture de l'arborescence de
+    l'article racine « Base de connaissance » (id 19 en production), sans l'exposer à l'extérieur et sans
+    révéler les autres clients.</p>
+
+  <h3>Règles non négociables</h3>
+  <table>
+    <tr><th style="width:6%">#</th><th>Règle</th><th>Mise en œuvre</th></tr>
+    <tr><td>1</td><td>Aucun article accessible sans connexion</td>
+        <td>Dépublication à l'installation, blocage de toute republication, renouvellement des jetons de fichiers, en-tête <code>noindex</code></td></tr>
+    <tr><td>2</td><td>Aucune donnée personnelle stockée</td>
+        <td>Seuls des ids d'articles sont stockés (paramètres système)</td></tr>
+    <tr><td>3</td><td>Pas de contournement des droits</td>
+        <td><code>ir.rule</code> + <code>ir.model.access</code> + surcharge du routage ; <code>sudo()</code> limité à la lecture de paramètres et aux opérations de maintenance</td></tr>
+    <tr><td>4</td><td>Pas de nouveau modèle</td>
+        <td>Héritage de <code>knowledge.article</code>, <code>ir.rule</code>, <code>ir.http</code>, <code>res.config.settings</code></td></tr>
+  </table>
+
+  <h3>Hors périmètre</h3>
+  <ul>
+    <li>Reformatage ou migration des articles ; recherche fédérée ; historique des versions côté portail ;
+      statistiques de consultation.</li>
+    <li>Les bases partagées nominativement (« Mc Kesson Knowledge base » 334, « IT HEALTH Knowledge base » 494)
+      gardent le fonctionnement natif de Knowledge.</li>
+  </ul>
+</section>
+
+<!-- ============================== 02 ============================== -->
+<section class="chapter">
+  <span class="eyebrow">Chapitre 02</span>
+  <h2><em>Architecture.</em></h2>
+
+  <dl class="kv">
+    <dt>Module</dt><dd><code>eurekam_knowledge_portal</code> · version 18.0.1.1.0 · licence LGPL-3</dd>
+    <dt>Dépendances</dt><dd><code>knowledge</code> (Enterprise), <code>portal</code></dd>
+    <dt>Dépôt</dt><dd>github.com/Eurekam-17/ModuleKnowledge, module sous <code>module/</code></dd>
+    <dt>Plateforme</dt><dd>Odoo.sh, monorepo prestataire <code>ScalizerOrg/eurekam</code>, sous-module <code>Eurekam-17/ModuleKnowledge</code></dd>
+  </dl>
+
+  <h3>Arborescence</h3>
+<pre>eurekam_knowledge_portal/
+├── __manifest__.py            post_init_hook, data
+├── __init__.py                post_init_hook : dépublication + renouvellement des jetons
+├── security/
+│   ├── ir.model.access.csv    lecture knowledge.article pour base.group_portal
+│   └── knowledge_portal_rules.xml   ir.rule portail : child_of eurekam_kb_root_id
+├── data/kb_root.xml           paramètres root_article_id (19) et lang_root_articles (en:463), noupdate
+├── models/
+│   ├── ir_rule.py             variable eurekam_kb_root_id dans le contexte des règles
+│   ├── ir_http.py             X-Robots-Tag noindex
+│   ├── knowledge_article.py   périmètre, langues, garde-fou de publication, jetons
+│   └── res_config_settings.py écran Paramètres → Base de connaissance portail
+├── controllers/
+│   ├── portal.py              /my/kb, /my/kb/article/&lt;id&gt;, cartes /my, rendu, libellés
+│   └── knowledge.py           redirection /knowledge/article/&lt;id&gt; (portail, base partagée)
+├── views/
+│   ├── portal_templates.xml   carte /my, fil d'Ariane, bouton tickets, pages KB
+│   └── res_config_settings_views.xml
+├── migrations/18.0.1.0.6/     en_root_article_id → lang_root_articles
+├── migrations/18.0.1.0.7/     renouvellement des jetons
+├── static/                    icône du module, pictogramme de la carte /my
+└── tests/test_portal_access.py</pre>
+
+  <h3>Paramètres système</h3>
+  <table>
+    <tr><th>Clé</th><th>Défaut</th><th>Rôle</th></tr>
+    <tr><td><code>eurekam_knowledge_portal.root_article_id</code></td><td>19</td>
+        <td>Racine de la base partagée. Absent, invalide ou 0 : aucun article exposé (fail-safe).</td></tr>
+    <tr><td><code>eurekam_knowledge_portal.lang_root_articles</code></td><td>en:463</td>
+        <td>Rubrique par langue, format <code>en:463, de:520</code>. Vide ou <code>aucun</code> : pas de tri par langue. Rubrique hors base : ignorée.</td></tr>
+  </table>
+  <p class="small">Les deux enregistrements sont en <code>noupdate</code> : une mise à jour du module n'écrase
+    pas les valeurs réglées. Ils sont pilotés par l'écran de paramètres (chapitre 05).</p>
+</section>
+
+<!-- ============================== 03 ============================== -->
+<section class="chapter">
+  <span class="eyebrow">Chapitre 03</span>
+  <h2>Sécurité et <em>droits d'accès.</em></h2>
+
+  <h3>Droits de lecture</h3>
+  <ul>
+    <li><b>ACL</b> : <code>access_knowledge_article_portal_eurekam</code>, lecture seule de
+      <code>knowledge.article</code> pour <code>base.group_portal</code>.</li>
+    <li><b>Règle</b> <code>knowledge_article_portal_rule</code> (portail, lecture) :
+      <code>[('id', 'child_of', eurekam_kb_root_id)]</code>. Elle s'ajoute en OU aux règles natives
+      (articles publiés, membres).</li>
+    <li><b>Contexte des règles</b> : le contexte d'évaluation natif ne contient pas <code>env</code> ;
+      <code>ir.rule._eval_context</code> est surchargé pour fournir <code>eurekam_kb_root_id</code>
+      (0 si non configuré). Le cache de <code>_compute_domain</code> est vidé à chaque écriture d'un paramètre système.</li>
+    <li>Les contrôleurs n'utilisent jamais <code>sudo()</code> pour lire les articles : l'utilisateur
+      connecté est soumis à ses règles, et le périmètre est revérifié explicitement (404 sinon).</li>
+  </ul>
+  <div class="warn"><b>Point de vigilance</b>
+    Les règles sont combinées en OU entre groupes : un portail qui aurait un groupe custom avec une
+    règle permissive sur <code>knowledge.article</code> verrait davantage d'articles par RPC. Les pages
+    <code>/my/kb</code> restent bornées par leur contrôle explicite.</div>
+
+  <h3>Routage Knowledge natif</h3>
+  <p><code>KnowledgeController.redirect_to_article</code> (<code>/knowledge/article/&lt;id&gt;</code>) est
+    surchargé : un utilisateur <b>portail</b> visant un article <b>de la base partagée</b> est redirigé vers
+    <code>/my/kb/article/&lt;id&gt;</code> (évite le panneau de partage natif). Tous les autres cas
+    (internes, bases nominatives, anonymes) appellent l'implémentation native. Les arguments sont transmis
+    tels quels : la version <code>website_knowledge</code> n'accepte que des arguments nommés.</p>
+
+  <h3>Garde-fou de publication</h3>
+  <ul>
+    <li><code>create</code> / <code>write</code> de <code>knowledge.article</code> : si
+      <code>is_published</code> ou <code>parent_id</code> change et qu'un article publié se retrouve dans la
+      base, <code>UserError</code>. Contrôle en <code>sudo</code> (lecture de la racine), déclenché seulement
+      sur ces deux champs (pas à chaque sauvegarde du corps).</li>
+    <li>Installation : <code>_eurekam_kb_unpublish_tree</code> passe <code>is_published</code> à False sur
+      toute la base.</li>
+    <li>Équipe d'assistance (<code>website_helpdesk_knowledge</code>) : si une équipe affiche encore la base
+      (« Connaissances » coché), l'installation est refusée avec un message explicatif ; si la case est déjà
+      décochée, le lien résiduel <code>website_article_id</code> est retiré.</li>
+  </ul>
+
+  <h3>Jetons d'accès des pièces jointes</h3>
+  <p>Un lien <code>/web/content/&lt;id&gt;?access_token=…</code> donne le fichier à quiconque le possède,
+    indépendamment de la publication de l'article. <code>_eurekam_kb_rotate_attachment_tokens</code> :</p>
+  <ol class="steps">
+    <li>repère les pièces jointes citées dans la base (liens <code>/web/content</code>, images
+      <code>/web/image</code>, blocs <code>data-embedded="file"</code>) ;</li>
+    <li>génère un nouveau jeton (UUID4) pour chacune ;</li>
+    <li>remplace l'ancien jeton dans le corps de <b>tous</b> les articles qui le citent, en SQL (la date
+      « Mis à jour le » et l'historique ne bougent pas), puis invalide le cache ORM ;</li>
+    <li>repasse en privé les pièces jointes d'articles marquées <code>public</code>.</li>
+  </ol>
+  <p>Exécuté à l'installation, par la migration 18.0.1.0.7, au changement de racine et via le bouton
+    de l'écran de paramètres.</p>
+
+  <h3>Indexation</h3>
+  <p><code>ir.http._post_dispatch</code> ajoute <code>X-Robots-Tag: noindex, nofollow</code> sur
+    <code>/knowledge…</code>, <code>/my/kb…</code>, <code>/web/content…</code>, <code>/web/image…</code>,
+    avec ou sans préfixe de langue (<code>/fr_FR/…</code>).</p>
+</section>
+
+<!-- ============================== 04 ============================== -->
+<section class="chapter">
+  <span class="eyebrow">Chapitre 04</span>
+  <h2>Portail <em>client.</em></h2>
+
+  <h3>Routes</h3>
+  <table>
+    <tr><th>Route</th><th>Accès</th><th>Comportement</th></tr>
+    <tr><td><code>/my/kb</code></td><td>auth user</td><td>Cartes des rubriques de premier niveau du public du client ; page « indisponible » si non configuré</td></tr>
+    <tr><td><code>/my/kb/article/&lt;id&gt;</code></td><td>auth user</td><td>Article, sommaire (articles de même niveau), fil d'Ariane, « Dans cette section » ; 404 hors public du client ; la racine redirige vers <code>/my/kb</code></td></tr>
+    <tr><td><code>/knowledge/article/&lt;id&gt;</code></td><td>natif</td><td>Redirection vers <code>/my/kb/article/&lt;id&gt;</code> pour un portail et un article de la base</td></tr>
+  </table>
+  <p class="small">Les « éléments d'article » (<code>is_article_item</code>) sont exclus de la navigation.
+    Tri : <code>sequence, name, id</code>.</p>
+
+  <h3>Rendu des articles</h3>
+  <p><code>render_portal_body</code> transforme le corps côté serveur, car le portail ne charge pas le
+    JavaScript de l'éditeur Knowledge :</p>
+  <ul>
+    <li><code>data-embedded="file"</code> → bouton de téléchargement
+      <code>/web/content/&lt;id&gt;?download=true&amp;access_token=…</code> (id et jeton lus dans
+      <code>data-embedded-props</code>) ;</li>
+    <li>autres blocs embarqués (<code>articleIndex</code>…) → retirés, en conservant le texte qui suit ;</li>
+    <li>date affichée : <code>last_edition_date</code> (dernière modification du contenu).</li>
+  </ul>
+
+  <h3>Langues</h3>
+  <p><code>knowledge.article._eurekam_kb_audience(lang)</code> renvoie
+    <code>(racine affichée, domaine, langue d'interface)</code> :</p>
+  <table>
+    <tr><th>Compte</th><th>Racine affichée</th><th>Domaine</th></tr>
+    <tr><td>Pas de rubrique de langue</td><td>racine</td><td>toute la base</td></tr>
+    <tr><td>Français (<code>fr_*</code>)</td><td>racine</td><td>base moins toutes les rubriques de langue</td></tr>
+    <tr><td>Langue déclarée</td><td>sa rubrique</td><td>sa rubrique</td></tr>
+    <tr><td>Autre langue</td><td>rubrique <code>en</code> (repli)</td><td>rubrique anglaise ; sans rubrique anglaise, base française</td></tr>
+  </table>
+  <p>C'est un tri de <b>présentation</b> : la règle d'accès couvre toujours toute la base (pas de règle
+    dépendant de la langue, donc pas de problème de cache des règles). Libellés d'interface :
+    <code>KB_LABELS</code> en fr, en, de, it, es (littéraux, les chaînes <code>_()</code> des modules
+    Eurekam n'étant pas traduites sur ce déploiement) ; langue sans libellés → anglais.</p>
+
+  <h3>Centre portail /my</h3>
+  <ul>
+    <li>Carte « Base de connaissance Eurekam », compteur <code>eurekam_kb_count</code> (compteur propre :
+      partager <code>knowledge_count</code> réactivait la carte native).</li>
+    <li>Carte native « Connaissances » : pour un utilisateur <code>share</code>, <code>knowledge_count</code>
+      ne compte que les articles hors base partagée ; elle n'apparaît donc que pour les membres des bases
+      nominatives.</li>
+    <li>Libellés de la carte et du bouton tickets via <code>_prepare_portal_layout_values</code>.</li>
+    <li>Bouton « Base de connaissance » ajouté au fil d'Ariane sur <code>/my/ticket*</code>, sans dépendance au module <code>helpdesk</code>.</li>
+  </ul>
+</section>
+
+<!-- ============================== 05 ============================== -->
+<section class="chapter">
+  <span class="eyebrow">Chapitre 05</span>
+  <h2>Paramétrage, installation et <em>migrations.</em></h2>
+
+  <h3>Écran Paramètres → Base de connaissance portail</h3>
+  <table>
+    <tr><th>Champ</th><th>Type</th><th>Règle</th></tr>
+    <tr><td><code>eurekam_kb_root_article_id</code></td><td>Many2one</td><td>Article racine ; changement → dépublication + jetons</td></tr>
+    <tr><td><code>eurekam_kb_{en,de,it,es}_article_id</code></td><td>Many2one</td><td>Domaine : descendants stricts de la racine ; hors base ou doublon → <code>UserError</code></td></tr>
+    <tr><td><code>eurekam_kb_other_langs</code></td><td>Char lecture</td><td>Autres langues du paramètre, conservées à l'enregistrement</td></tr>
+    <tr><td><code>eurekam_kb_article_count</code></td><td>Integer lecture</td><td>Taille de la base partagée</td></tr>
+    <tr><td><code>action_eurekam_kb_rotate_tokens</code></td><td>Bouton</td><td>Réservé à <code>base.group_system</code> (contrôle explicite)</td></tr>
+  </table>
+  <p class="small">Valeurs chargées dans <code>get_values</code> (un compute sans dépendance n'est pas évalué
+    à l'ouverture des paramètres). <code>set_values</code> n'agit que pour un administrateur.</p>
+
+  <h3>Installation</h3>
+  <ol class="steps">
+    <li>Données : ACL, règle, paramètres, vues.</li>
+    <li><code>post_init_hook</code> : contrôle des équipes d'assistance, dépublication de la base, renouvellement des jetons.</li>
+  </ol>
+  <div class="warn"><b>Prérequis production</b>
+    Décocher « Connaissances » sur l'équipe d'assistance « Service Client » avant l'installation. Après :
+    pointer le menu « FAQ » et le lien « Knowledge base » de la page d'accueil vers <code>/my/kb</code>,
+    dépublier l'article 21.</div>
+
+  <h3>Migrations</h3>
+  <table>
+    <tr><th>Version</th><th>Script</th><th>Effet</th></tr>
+    <tr><td>18.0.1.0.6</td><td><code>post-migrate.py</code></td><td><code>en_root_article_id</code> → <code>lang_root_articles</code> (<code>en:&lt;id&gt;</code> ou <code>aucun</code>), suppression de l'ancien paramètre</td></tr>
+    <tr><td>18.0.1.0.7</td><td><code>post-migrate.py</code></td><td>Renouvellement des jetons des pièces jointes de la base (joué aussi lors d'une mise à jour directe 18.0.1.0.6 → 18.0.1.1.0)</td></tr>
+  </table>
+</section>
+
+<!-- ============================== 06 ============================== -->
+<section class="chapter">
+  <span class="eyebrow">Chapitre 06</span>
+  <h2>Tests, déploiement et <em>exploitation.</em></h2>
+
+  <h3>Tests automatiques</h3>
+  <p><code>tests/test_portal_access.py</code>, tag <code>post_install</code>, 32 tests ; chaque test crée sa
+    propre arborescence (indépendant des ids de production).</p>
+  <table>
+    <tr><th>Classe</th><th>Couverture</th></tr>
+    <tr><td>TestKbPortalAccess</td><td>Lecture de l'arbre, hors arbre, lecture seule, fail-safe, changement de racine, membres d'autres clients, internes, garde-fou de publication, dépublication, méthodes privées (RPC)</td></tr>
+    <tr><td>TestKbTokenRotation</td><td>Nouveaux jetons, corps mis à jour partout, date inchangée, pièce jointe publique repassée en privé</td></tr>
+    <tr><td>TestKbSettings</td><td>Lecture des paramètres, enregistrement, langues conservées, refus hors base, bouton jetons</td></tr>
+    <tr><td>TestKbLangRoots · TestKbPortalBody</td><td>Analyse du paramètre de langues ; rendu des blocs embarqués</td></tr>
+    <tr><td>TestKbPortalHttp</td><td>Pages /my/kb, niveaux, 404, redirections, membres nominatifs, internes, anonymes, tri FR / EN / repli DE / rubrique DE, page indisponible</td></tr>
+  </table>
+<pre>odoo-bin -d &lt;base&gt; -u eurekam_knowledge_portal --test-enable \
+         --test-tags /eurekam_knowledge_portal --stop-after-init</pre>
+  <div class="note"><b>Où les lancer</b>
+    Les branches Odoo.sh de type Staging (<code>sandbox</code>, <code>Staging</code>) ne lancent pas les
+    tests à la mise à jour : utiliser une branche Development ou une base locale.</div>
+
+  <h3>Déploiement</h3>
+  <ol class="steps">
+    <li>Commit sur <code>main</code> de <code>Eurekam-17/ModuleKnowledge</code>, version incrémentée dans le manifeste.</li>
+    <li>Sandbox : pointeur du sous-module mis à jour sur la branche <code>sandbox</code> de <code>ScalizerOrg/eurekam</code> ; Odoo.sh met à jour le module.</li>
+    <li>Recette puis production : le prestataire met à jour le pointeur sur <code>Staging</code>, puis <code>main</code>.</li>
+    <li>Vérifier en ligne (version du module, comportement) : un pointeur mis à jour n'est pas une preuve de déploiement.</li>
+  </ol>
+
+  <h3>Limites connues</h3>
+  <ul>
+    <li>Vues embarquées (listes d'articles) non interactives côté portail.</li>
+    <li>Un utilisateur portail peut lire par RPC les champs techniques des articles de la base
+      (<code>create_uid</code>, <code>write_uid</code> : collaborateurs Eurekam). Les membres d'autres clients
+      restent protégés par les règles natives.</li>
+    <li>Les liens de fichiers renouvelés restent utilisables par quiconque les reçoit (principe du jeton) ; ils
+      ne sont plus publiés ni indexés.</li>
+    <li>Contenu : anciens liens <code>/web#…</code>, <code>support.eurekam.fr</code> et images de l'ancien
+      outil de support à corriger dans les articles (<code>docs/liens-casses-base-connaissance.md</code>).</li>
+  </ul>
+
+  <h3>Historique des versions</h3>
+  <table>
+    <tr><th>Version</th><th>Commit</th><th>Évolution</th></tr>
+    <tr><td>18.0.1.0.0</td><td>d32358a</td><td>Première version : règle portail, /my/kb, dépublication, noindex</td></tr>
+    <tr><td>18.0.1.0.0</td><td>c143bb1 · 7bfd3bf</td><td>Installation refusée si l'Assistance publie la base ; lien résiduel retiré</td></tr>
+    <tr><td>18.0.1.0.1</td><td>8ab8101</td><td>Correction erreur 500 sur /knowledge/article (arguments nommés)</td></tr>
+    <tr><td>18.0.1.0.2</td><td>6ce48d7</td><td>Fichiers intégrés téléchargeables, date de dernière modification</td></tr>
+    <tr><td>18.0.1.0.3 · 0.4</td><td>5429396 · 53b25b6</td><td>Compteur propre ; bases nominatives préservées</td></tr>
+    <tr><td>18.0.1.0.5 · 0.6</td><td>3228142 · 0ad9407</td><td>Rubrique anglaise ; bases par langue avec anglais en repli</td></tr>
+    <tr><td>18.0.1.0.7</td><td>611cb9c</td><td>Renouvellement des jetons des fichiers indexés</td></tr>
+    <tr><td>18.0.1.1.0</td><td>d710136</td><td>Écran Paramètres → Base de connaissance portail, icône</td></tr>
+  </table>
+</section>
+
+</body>
+</html>
