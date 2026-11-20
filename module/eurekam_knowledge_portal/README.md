@@ -229,6 +229,7 @@ Compte de test sur la sandbox : `kb-test@eurekam.fr` (utilisateur portail n°850
 | + | Compte en français (18.0.1.0.6) | Inchangé | ✅ 8 rubriques, carte et bouton tickets en français |
 | + | Compte en allemand sans rubrique DE | Repli sur l'anglais | _à faire_ (couvert par `test_language_without_section_falls_back_to_english`) |
 | + | Jetons renouvelés (18.0.1.0.7, sandbox) | Ancien lien Google refusé | ✅ `…/web/content/54443?access_token=89e9…` → 404 ; nouveaux liens de « Journaux de changement » → 200 (PDF), en-tête `noindex` |
+| + | Écran Paramètres (18.0.1.1.0, sandbox, admin) | Réglages sans mode développeur | ✅ « Base de connaissance portail » : racine « Base de connaissance » (99 articles), Anglais = [EN] - Knowledge database, bouton de renouvellement des jetons ; enregistrement non testé à l'écran (couvert par les tests `TestKbSettings`) |
 
 Anomalies trouvées pendant la recette, corrigées :
 - 18.0.1.0.1 : `/knowledge/article/<id>` en erreur 500 pour tous (signature de
