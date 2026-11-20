@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Paramètres → Base de connaissance portail (administrateurs).
+        Remplace la saisie des paramètres système en mode développeur ; les paramètres
+        eurekam_knowledge_portal.root_article_id et .lang_root_articles restent la source.
+    -->
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.eurekam_knowledge_portal</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="96"/>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Base de connaissance portail" string="Base de connaissance portail"
+                     name="eurekam_knowledge_portal" groups="base.group_system">
+                    <block title="Base partagée avec les clients" name="eurekam_kb_root_block">
+                        <setting id="eurekam_kb_root_setting" string="Article racine"
+                                 help="Cet article et toute sa descendance sont lisibles par les clients connectés, sur /my/kb. Jamais publiés sur le site.">
+                            <field name="eurekam_kb_root_article_id" options="{'no_create': True}"/>
+                            <div class="mt-2 text-muted">
+                                <field name="eurekam_kb_article_count" class="oe_inline"/> article(s) dans la base partagée
+                            </div>
+                        </setting>
+                    </block>
+                    <block title="Bases par langue" name="eurekam_kb_lang_block">
+                        <setting id="eurekam_kb_lang_setting" string="Rubrique de chaque langue"
+                                 help="Rubrique placée sous l'article racine. Un client voit la rubrique de la langue de son compte ; en français, la base sans ces rubriques ; dans une langue sans rubrique, l'anglais.">
+                            <div class="row">
+                                <label for="eurekam_kb_en_article_id" class="col-lg-4 o_light_label"/>
+                                <field name="eurekam_kb_en_article_id" options="{'no_create': True}"/>
+                            </div>
+                            <div class="row">
+                                <label for="eurekam_kb_de_article_id" class="col-lg-4 o_light_label"/>
+                                <field name="eurekam_kb_de_article_id" options="{'no_create': True}"/>
+                            </div>
+                            <div class="row">
+                                <label for="eurekam_kb_it_article_id" class="col-lg-4 o_light_label"/>
+                                <field name="eurekam_kb_it_article_id" options="{'no_create': True}"/>
+                            </div>
+                            <div class="row">
+                                <label for="eurekam_kb_es_article_id" class="col-lg-4 o_light_label"/>
+                                <field name="eurekam_kb_es_article_id" options="{'no_create': True}"/>
+                            </div>
+                            <div class="row">
+                                <label for="eurekam_kb_other_langs" class="col-lg-4 o_light_label"/>
+                                <field name="eurekam_kb_other_langs"/>
+                            </div>
+                        </setting>
+                    </block>
+                    <block title="Sécurité des fichiers" name="eurekam_kb_security_block">
+                        <setting id="eurekam_kb_tokens_setting" string="Liens de fichiers"
+                                 help="Les fichiers et images des articles s'ouvrent avec un jeton contenu dans leur lien. Si des liens ont circulé (moteur de recherche, e-mail…), renouveler les jetons les rend inutilisables ; les articles restent fonctionnels.">
+                            <button name="action_eurekam_kb_rotate_tokens" type="object"
+                                    string="Renouveler les jetons des fichiers"
+                                    class="btn-link" icon="oi-arrow-right"
+                                    confirm="Les liens de fichiers déjà diffusés ne fonctionneront plus. Continuer ?"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>

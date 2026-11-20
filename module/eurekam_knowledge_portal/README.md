@@ -48,8 +48,9 @@ historique. Les pages n'affichent que titre, émoji, date de mise à jour et con
   1. Dans Connaissances, créer sous l'article 19 une rubrique « [DE] - Wissensdatenbank » et y
      placer les articles et manuels en allemand ; noter son id (dans l'URL).
   2. *Paramètres → Langues* : activer l'allemand s'il ne l'est pas.
-  3. *Paramètres → Technique → Paramètres système* : compléter
-     `eurekam_knowledge_portal.lang_root_articles`, par ex. `en:463, de:520`.
+  3. *Paramètres → Base de connaissance portail* : choisir la rubrique dans le champ de la
+     langue (anglais, allemand, italien, espagnol) ; pour une autre langue, compléter le
+     paramètre système `eurekam_knowledge_portal.lang_root_articles`, par ex. `en:463, nl:540`.
   4. Mettre les clients concernés en allemand (fiche contact, champ Langue).
   Les libellés d'interface existent déjà en **fr, en, de, it, es** (`KB_LABELS` dans
   `controllers/portal.py` ; de, it et es sont à faire relire par un natif). Pour une autre
@@ -87,17 +88,22 @@ Pour relancer le renouvellement (ex. si un fichier a de nouveau été diffusé) 
 
 ## Configuration après installation
 
-Paramètre système **`eurekam_knowledge_portal.root_article_id`** = id de l'article racine
-(`19` « Base de connaissance » en prod, valeur créée par défaut à l'installation).
+Tout se règle dans **Paramètres → Base de connaissance portail** (administrateurs, sans mode
+développeur) :
 
-Pour le modifier : *Paramètres → (mode développeur) → Technique → Paramètres → Paramètres système*,
-rechercher `eurekam_knowledge_portal.root_article_id`.
+- **Article racine** : la base partagée (19 en production). Vide : aucun article exposé.
+  Changer de racine dépublie la nouvelle base et renouvelle les jetons de ses fichiers, comme à
+  l'installation ; refusé tant qu'une équipe d'assistance l'affiche publiquement.
+- **Bases par langue** : rubrique de l'anglais, de l'allemand, de l'italien et de l'espagnol,
+  choisie parmi les sous-articles de la racine (une rubrique hors de la base est refusée).
+  « Autres langues » affiche, sans les modifier, les rubriques d'autres langues déclarées
+  directement dans le paramètre système.
+- **Sécurité des fichiers** : bouton « Renouveler les jetons des fichiers ».
 
-- Valeur absente, invalide ou `0` → **aucun article exposé**, `/my/kb` affiche une page
-  « Base de connaissance indisponible » (fail-safe).
-- Ne pas créer le paramètre **avant** l'installation (contrainte d'unicité sur la clé).
-- Après un changement de racine, relancer la dépublication du nouvel arbre si besoin (shell :
-  `env['knowledge.article']._eurekam_kb_unpublish_tree()`).
+Sous le capot, ces réglages restent stockés dans les paramètres système
+`eurekam_knowledge_portal.root_article_id` et `eurekam_knowledge_portal.lang_root_articles`
+(toujours modifiables en mode développeur, par ex. pour une langue non proposée à l'écran).
+Ne pas créer ces paramètres **avant** l'installation (contrainte d'unicité sur la clé).
 
 ## ⚠️ Prérequis : retirer la base de l'Assistance publique
 

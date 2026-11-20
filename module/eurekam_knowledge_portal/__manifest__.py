@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Eurekam Knowledge Portal',
-    'version': '18.0.1.0.7',
+    'version': '18.0.1.1.0',
     'category': 'Productivity/Knowledge',
     'summary': "Donne aux utilisateurs portail la lecture de la base de connaissance Eurekam.",
     'description': """
@@ -19,6 +19,7 @@ et sans exposer les autres clients.
         'security/knowledge_portal_rules.xml',
         'data/kb_root.xml',
         'views/portal_templates.xml',
+        'views/res_config_settings_views.xml',
     ],
     'post_init_hook': 'post_init_hook',
     'installable': True,

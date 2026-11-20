@@ -151,6 +151,50 @@ class TestKbTokenRotation(KbPortalCommon, TransactionCase):
 
 
 @tagged('post_install', '-at_install')
+class TestKbSettings(KbPortalCommon, TransactionCase):
+    """Paramètres → Base de connaissance portail."""
+
+    def setUp(self):
+        super().setUp()
+        # La base de test est une copie de la prod : « en:463 » y pointe hors de la racine
+        # de test et serait refusé à l'enregistrement.
+        self.env['ir.config_parameter'].sudo().set_param(LANG_ROOTS_PARAM, 'aucun')
+
+    def _settings(self, **values):
+        admin_env = self.env(user=self.env.ref('base.user_admin'))
+        return admin_env['res.config.settings'].create(values)
+
+    def test_settings_show_current_parameters(self):
+        settings = self._settings()
+        self.assertEqual(settings.eurekam_kb_root_article_id, self.root)
+        self.assertEqual(settings.eurekam_kb_article_count, len(self.tree))
+
+    def test_settings_save_language_section(self):
+        self._settings(eurekam_kb_root_article_id=self.root.id,
+                       eurekam_kb_en_article_id=self.child.id).execute()
+        Param = self.env['ir.config_parameter'].sudo()
+        self.assertEqual(Param.get_param(ROOT_PARAM), str(self.root.id))
+        self.assertEqual(parse_lang_roots(Param.get_param(LANG_ROOTS_PARAM)), {'en': self.child.id})
+        self.assertEqual(self._settings().eurekam_kb_en_article_id, self.child)
+
+    def test_settings_keep_other_languages(self):
+        self.env['ir.config_parameter'].sudo().set_param(LANG_ROOTS_PARAM, f'nl:{self.grandchild.id}')
+        self._settings(eurekam_kb_root_article_id=self.root.id,
+                       eurekam_kb_de_article_id=self.child.id).execute()
+        roots = parse_lang_roots(self.env['ir.config_parameter'].sudo().get_param(LANG_ROOTS_PARAM))
+        self.assertEqual(roots, {'nl': self.grandchild.id, 'de': self.child.id})
+
+    def test_settings_refuse_language_section_outside_root(self):
+        with self.assertRaises(UserError):
+            self._settings(eurekam_kb_root_article_id=self.root.id,
+                           eurekam_kb_en_article_id=self.outside.id).execute()
+
+    def test_rotate_tokens_button(self):
+        action = self._settings().action_eurekam_kb_rotate_tokens()
+        self.assertEqual(action['tag'], 'display_notification')
+
+
+@tagged('post_install', '-at_install')
 class TestKbLangRoots(TransactionCase):
 
     def test_parse_lang_roots(self):
